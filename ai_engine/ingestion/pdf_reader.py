@@ -1,7 +1,6 @@
 from pathlib import Path
 import fitz  
-
-
+from ai_engine.models.document import Document
 class PDFReader:
     """
     Reads PDF documents and extracts text page by page.
@@ -27,11 +26,15 @@ class PDFReader:
         for page_number, page in enumerate(document, start=1):
 
             pages.append(
-                {
-                    "page": page_number,
-                    "text": page.get_text(),
-                    "source": self.pdf_path.name
-                }
+
+                Document(
+
+                    source=self.pdf_path.name,
+
+                    page=page_number,
+
+                    text=page.get_text()
+                )
             )
 
         document.close()
