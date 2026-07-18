@@ -1,6 +1,5 @@
 from pathlib import Path
-
-from ai_engine.ingestion.pdf_reader import PDFReader
+from ai_engine.ingestion.reader_factory import ReaderFactory
 from ai_engine.preprocessing.text_cleaner import TextCleaner
 from ai_engine.chunking.chunker import DocumentChunker
 from ai_engine.models.chunk import Chunk
@@ -32,9 +31,9 @@ class DocumentPipeline:
 
         file_path = Path(file_path)
 
-        reader = PDFReader(file_path)
+        reader = ReaderFactory.get_reader(file_path)
 
-        documents = reader.extract_text()
+        documents = reader.read()
 
         all_chunks = []
 

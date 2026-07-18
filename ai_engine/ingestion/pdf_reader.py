@@ -1,7 +1,9 @@
 from pathlib import Path
 import fitz  
 from ai_engine.models.document import Document
-class PDFReader:
+from ai_engine.ingestion.base_reader import BaseReader
+
+class PDFReader(BaseReader):
     """
     Reads PDF documents and extracts text page by page.
     """
@@ -9,7 +11,7 @@ class PDFReader:
     def __init__(self, pdf_path):
         self.pdf_path = Path(pdf_path)
 
-    def extract_text(self):
+    def read(self):
         """
         Returns text and metadata for every page.
         """
