@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-
+from dataclasses import dataclass, field
+from typing import Optional
 
 @dataclass
 class Chunk:
@@ -14,4 +14,6 @@ class Chunk:
 
     text: str
 
-    metadata: dict
+    metadata: dict = field(default_factory=dict)
+
+    embedding: Optional[list[float]] = None
