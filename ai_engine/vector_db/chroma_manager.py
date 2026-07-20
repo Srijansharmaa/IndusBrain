@@ -2,6 +2,9 @@ import chromadb
 
 
 class ChromaManager:
+    """
+    Handles all vector database operations.
+    """
 
     def __init__(self):
 
@@ -14,6 +17,9 @@ class ChromaManager:
         )
 
     def add_chunks(self, chunks):
+        """
+        Store embedded chunks.
+        """
 
         self.collection.add(
 
@@ -28,6 +34,9 @@ class ChromaManager:
         )
 
     def search(self, embedding, k=5):
+        """
+        Retrieve top-k similar chunks.
+        """
 
         return self.collection.query(
 
@@ -35,4 +44,33 @@ class ChromaManager:
 
             n_results=k
 
+        )
+
+    def count(self):
+        """
+        Returns number of stored chunks.
+        """
+
+        return self.collection.count()
+
+    def delete(self, ids):
+        """
+        Delete chunks by ids.
+        """
+
+        self.collection.delete(
+            ids=ids
+        )
+
+    def reset(self):
+        """
+        Remove every chunk from database.
+        """
+
+        self.client.delete_collection(
+            "industrial_documents"
+        )
+
+        self.collection = self.client.get_or_create_collection(
+            name="industrial_documents"
         )
