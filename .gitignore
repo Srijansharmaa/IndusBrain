@@ -221,3 +221,35 @@ __marimo__/
 tests/
 data/chroma_db/
 .env
+
+# Node.js
+node_modules/
+**/node_modules/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+.env.*
+
+# Uploads
+Uploads/
+server/uploads/
+
+# Logs
+*.log
+
+# Build folders
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

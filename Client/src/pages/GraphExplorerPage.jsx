@@ -7,23 +7,57 @@ import { GRAPH_NODES, findNodeById } from "../constants/graphData";
 
 export default function GraphExplorerPage({ graph }) {
   const [filter, setFilter] = useState("all");
+
   const activeNode = findNodeById(graph.activeNode);
-  const activePath = filter === "all" ? [] : GRAPH_NODES.filter((n) => n.type === filter).map((n) => n.id);
+
+  const activePath =
+    filter === "all"
+      ? []
+      : GRAPH_NODES.filter((n) => n.type === filter).map((n) => n.id);
 
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: activeNode ? "1fr 320px" : "1fr" }}>
-      <div className="bg-card rounded-card border border-hairline overflow-hidden">
-        <div className="px-5 py-4 border-b border-hairline flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Share2 size={17} className="text-primary" />
-            <span className="font-bold text-[14.5px] text-ink">Knowledge Graph Explorer</span>
+    <div
+      className="grid gap-5"
+      style={{
+        gridTemplateColumns: activeNode ? "1fr 340px" : "1fr",
+      }}
+    >
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+
+        {/* Header */}
+        <div className="px-6 py-4 bg-[#111827] border-b border-gray-700 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center">
+              <Share2 size={18} className="text-white" />
+            </div>
+
+            <div>
+              <h2 className="text-white font-bold text-base">
+                Knowledge Graph
+              </h2>
+
+              <p className="text-gray-400 text-xs">
+                Enterprise Relationship Explorer
+              </p>
+            </div>
           </div>
-          <GraphFilterBar activeFilter={filter} onChange={setFilter} />
+
+          <GraphFilterBar
+            activeFilter={filter}
+            onChange={setFilter}
+          />
         </div>
-        <div className="h-[560px]">
-          <KnowledgeGraphPanel activePath={activePath} activeNode={graph.activeNode} setActiveNode={graph.setActiveNode} />
+
+        {/* Graph */}
+        <div className="h-[560px] bg-[#F8FAFC]">
+          <KnowledgeGraphPanel
+            activePath={activePath}
+            activeNode={graph.activeNode}
+            setActiveNode={graph.setActiveNode}
+          />
         </div>
       </div>
+
       {activeNode && (
         <GraphNodeDrawer
           node={activeNode}

@@ -13,28 +13,44 @@ export default function KnowledgeGraphPanel({ activePath = [], activeNode, setAc
   const selectedNode = findNodeById(activeNode);
 
   return (
-    <div className="flex flex-col h-full bg-navy rounded-card overflow-hidden border border-navy-line">
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-navy-line">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-success shadow-[0_0_0_3px_rgba(34,197,94,0.2)]" />
-          <span className="text-[12.5px] font-bold text-slate-200 tracking-wide">Live Knowledge Graph</span>
-        </div>
-        <div className="flex gap-1.5">
-          <IconButton dark onClick={() => setZoom((z) => Math.min(1.6, z + 0.2))}>
-            <ZoomIn size={13} className="text-slate-400" />
-          </IconButton>
-          <IconButton dark onClick={() => setZoom((z) => Math.max(0.6, z - 0.2))}>
-            <ZoomOut size={13} className="text-slate-400" />
-          </IconButton>
-          {onExpand && (
-            <IconButton dark onClick={onExpand}>
-              <Maximize2 size={13} className="text-slate-400" />
-            </IconButton>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-lg">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+  <div>
+    <h2 className="text-lg font-semibold text-gray-900">
+      Knowledge Graph
+    </h2>
 
-      <div className="flex-1 overflow-hidden relative">
+    <p className="text-sm text-gray-500">
+      Visualize relationships across enterprise entities
+    </p>
+  </div>
+
+  <div className="flex gap-2">
+    <IconButton
+      onClick={() => setZoom((z) => Math.min(1.6, z + 0.2))}
+      className="rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+    >
+      <ZoomIn size={16} className="text-gray-600" />
+    </IconButton>
+
+    <IconButton
+      onClick={() => setZoom((z) => Math.max(0.6, z - 0.2))}
+      className="rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+    >
+      <ZoomOut size={16} className="text-gray-600" />
+    </IconButton>
+
+    {onExpand && (
+      <IconButton
+        onClick={onExpand}
+        className="rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+      >
+        <Maximize2 size={16} className="text-gray-600" />
+      </IconButton>
+    )}
+  </div>
+</div>
+      <div className="flex-1 overflow-hidden relative bg-slate-50">
         <svg
           viewBox="0 0 850 400"
           className="w-full h-full transition-transform duration-300"
@@ -48,7 +64,7 @@ export default function KnowledgeGraphPanel({ activePath = [], activeNode, setAc
               <line
                 key={i}
                 x1={nodeA.x} y1={nodeA.y} x2={nodeB.x} y2={nodeB.y}
-                stroke={active ? "#2563EB" : "#1E293B"}
+                stroke={active ? "#4F46E5" : "#CBD5E1"}
                 strokeWidth={active ? 2.5 : 1.4}
                 className="transition-all duration-400"
               />
@@ -63,14 +79,14 @@ export default function KnowledgeGraphPanel({ activePath = [], activeNode, setAc
                 <circle
                   cx={node.x} cy={node.y} r={selected ? 15 : 10.5}
                   fill={active ? color : "#1E293B"}
-                  stroke={selected ? "#fff" : "none"}
+                  stroke={selected ? "#1E293B" : "none"}
                   strokeWidth={2}
                   opacity={active ? 1 : 0.45}
                   className="transition-all duration-300"
                 />
                 <text
                   x={node.x} y={node.y + 24} textAnchor="middle" fontSize={9.5}
-                  fill={active ? "#E2E8F0" : "#475569"}
+                  fill="#334155"
                   fontFamily="Inter, sans-serif"
                   fontWeight={selected ? 700 : 500}
                   className="transition-colors duration-300"
@@ -83,7 +99,7 @@ export default function KnowledgeGraphPanel({ activePath = [], activeNode, setAc
         </svg>
       </div>
 
-      <div className="px-4 pt-2.5 pb-3.5 border-t border-navy-line">
+      <div className="px-4 pt-2.5 pb-3.5 border-t border-gray-200 bg-white">
         <div className={`flex flex-wrap gap-2 ${activeNode ? "mb-2.5" : ""}`}>
           <GraphLegend />
         </div>

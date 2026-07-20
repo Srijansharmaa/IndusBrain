@@ -1,10 +1,41 @@
-import { DOCUMENTS, DOCUMENT_CATEGORIES } from "../constants/documents";
+import axios from "axios";
 
-// TODO(backend): replace with `axios.get("/api/documents")`
-export const getDocuments = async () => DOCUMENTS;
+import api from "./api";
 
-// TODO(backend): replace with `axios.get("/api/documents/categories")`
-export const getDocumentCategories = async () => DOCUMENT_CATEGORIES;
 
-// TODO(backend): replace with `axios.post("/api/documents", formData)`
-export const uploadDocument = async (file) => ({ ok: true, id: Date.now() });
+export const getDocuments = async () => {
+  const res = await api.get("/documents");
+  return res.data.documents;
+};
+
+export const getDocumentCategories = async () => {
+  const docs = await getDocuments();
+
+  const categories = [
+    "All",
+    ...new Set(docs.map((doc) => doc.cat || "General")),
+  ];
+
+  return categories;
+};
+
+export const uploadDocument = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await api.post("/documents/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return res.data;
+};
+ export const semanticSearch = async (query) => {
+
+    const response = await api.post("/search", {
+        query
+    });
+
+    return response.data.results;
+};

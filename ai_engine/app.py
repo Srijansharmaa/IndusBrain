@@ -5,14 +5,41 @@ import os
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 from ai_engine.config import SUPPORTED_FILES
 from ai_engine.pipelines.document_pipeline import DocumentPipeline
+from ai_engine.embeddings.embedding_model import EmbeddingModel
+from ai_engine.vector_db.chroma_manager import ChromaManager
+
+
+pipeline = None
+chroma = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global pipeline, chroma
+
+    print("🚀 Starting IndusBrain...")
+
+    pipeline = DocumentPipeline()
+    chroma = ChromaManager()
+    print("Chroma count:", chroma.collection.count())
+    print("📦 Loading embedding model...")
+    EmbeddingModel.get_model()
+    print("✅ Embedding model loaded.")
+
+    print("✅ AI Engine Ready!")
+
+    yield
+
+    print("👋 Shutting down AI Engine...")
 
 app = FastAPI(
     title="IndusBrain AI Engine",
     description="Document Processing API",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # -------------------------------
@@ -39,7 +66,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # -------------------------------
 # Initialize Pipeline
 # -------------------------------
-pipeline = DocumentPipeline()
+
 
 
 # ==========================================================
@@ -100,8 +127,22 @@ async def process_document(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
 
     try:
-
+        # Process document into chunks
         chunks = pipeline.process(filepath)
+
+        # Generate embeddings
+        texts = [chunk.text for chunk in chunks]
+        embeddings = EmbeddingModel.encode(texts)
+
+        # Attach embeddings to chunks
+        for chunk, embedding in zip(chunks, embeddings):
+            chunk.embedding = embedding.tolist()
+
+        # Store in ChromaDB
+        chroma.add_chunks(chunks)
+
+        print(f"✅ Stored {len(chunks)} chunks")
+        print(f"📦 Chroma count: {chroma.count()}")
 
         return {
             "success": True,
@@ -114,12 +155,10 @@ async def process_document(file: UploadFile = File(...)):
         }
 
     except Exception as e:
-
         raise HTTPException(
             status_code=500,
             detail=str(e)
         )
-
 
 # ==========================================================
 # Delete Uploaded File
@@ -185,4 +224,40 @@ def process_existing(filename: str):
             asdict(chunk)
             for chunk in chunks
         ]
+    }
+from pydantic import BaseModel
+
+class SearchRequest(BaseModel):
+    query: str
+    k: int = 5
+
+
+@app.post("/search")
+async def semantic_search(request: SearchRequest):
+
+    embedding = EmbeddingModel.encode([request.query])[0].tolist()
+
+    results = chroma.search(
+        embedding,
+        k=request.k
+    )
+
+    formatted = []
+
+    ids = results["ids"][0]
+    docs = results["documents"][0]
+    metas = results["metadatas"][0]
+    distances = results["distances"][0]
+
+    for i in range(len(ids)):
+        formatted.append({
+            "id": ids[i],
+            "text": docs[i],
+            "metadata": metas[i],
+            "score": round((1 - distances[i]) * 100, 2)
+        })
+
+    return {
+        "success": True,
+        "results": formatted
     }

@@ -8,19 +8,19 @@ export default function Sidebar({ page, setPage, user }) {
   const plant = getPlantById(user.plant);
 
   return (
-    <div className="w-60 bg-navy h-screen sticky top-0 flex flex-col shrink-0">
+    <div className="w-60 bg-[#0F172A] h-screen sticky top-0 flex flex-col shrink-0 border-r border-[#334155]">
       <div className="px-5 pt-5 pb-4 flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-[9px] bg-gradient-to-br from-primary to-purple flex items-center justify-center">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 via-sky-500 to-indigo-600 flex items-center justify-center shadow-lg">
           <Sparkles size={16} className="text-white" />
         </div>
         <div>
-          <p className="m-0 text-[14.5px] font-extrabold text-white tracking-tight">IndustrialIQ</p>
-          <p className="m-0 text-[9.5px] text-navy-line font-semibold tracking-wider">ENTERPRISE</p>
+          <p className="text-white font-extrabold text-[15px]">IndustrialIQ</p>
+          <p className="text-cyan-300 text-[10px] tracking-[0.25em] font-semibold uppercase">ENTERPRISE</p>
         </div>
       </div>
 
-      <div className="mx-4 mt-1 mb-3 px-3 py-2.5 rounded-xl bg-navy-soft border border-navy-line flex items-center gap-2">
-        <Building2 size={14} className="text-blue-300 shrink-0" />
+      <div className="mx-4 mt-2 mb-4 px-3 py-3 rounded-xl bg-[#1E293B] border border-[#334155] flex items-center gap-3">
+        <Building2 size={15} className="text-cyan-400" />
         <div className="overflow-hidden">
           <p className="m-0 text-[11.5px] font-bold text-slate-200 whitespace-nowrap overflow-hidden text-ellipsis">
             {plant?.label}

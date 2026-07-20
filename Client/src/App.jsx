@@ -29,6 +29,7 @@ export default function App() {
   const { user, login } = useAuth();
   const [page, setPage] = useState("dashboard");
   const [dark, setDark] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const graph = useKnowledgeGraph();
 
   if (!user) return <LoginScreen onLogin={login} />;
@@ -44,8 +45,10 @@ export default function App() {
       setDark={setDark}
       graph={graph}
       onExpandGraph={() => setPage("graph")}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
     >
-      <PageComponent user={user} graph={graph} />
+      <PageComponent user={user} graph={graph} searchQuery={searchQuery} />
     </AppShell>
   );
 }

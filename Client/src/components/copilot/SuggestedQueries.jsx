@@ -1,14 +1,38 @@
 import React from "react";
 
-export default function SuggestedQueries({ queries, onSelect, disabled }) {
+export default function SuggestedQueries({
+  queries,
+  onSelect,
+  disabled,
+}) {
   return (
-    <div className="flex gap-2 flex-wrap mb-2.5">
+    <div className="mb-4 flex flex-wrap gap-3">
       {queries.map((query) => (
         <button
           key={query}
           disabled={disabled}
           onClick={() => onSelect(query)}
-          className="text-[11.5px] px-2.5 py-1.5 rounded-full border border-hairline bg-card cursor-pointer text-subtext font-sans disabled:cursor-not-allowed disabled:opacity-60"
+          className="
+            rounded-full
+            border
+            border-gray-200
+            bg-white
+            px-4
+            py-2
+            text-sm
+            font-medium
+            text-slate-700
+            shadow-sm
+            transition-all
+            duration-300
+            hover:-translate-y-0.5
+            hover:border-indigo-300
+            hover:bg-indigo-50
+            hover:text-indigo-700
+            hover:shadow-md
+            disabled:cursor-not-allowed
+            disabled:opacity-50
+          "
         >
           {query}
         </button>

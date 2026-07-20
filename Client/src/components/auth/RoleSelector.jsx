@@ -10,18 +10,41 @@ export default function RoleSelector({ selectedRole, onSelect }) {
         const selected = selectedRole === role.id;
         return (
           <button
-            key={role.id}
-            onClick={() => onSelect(role.id)}
-            className={cx(
-              "text-left p-3 rounded-2xl border-[1.5px] cursor-pointer transition-all",
-              selected ? "border-primary bg-primary/10" : "border-navy-line bg-[#0F172A]"
-            )}
-          >
-            <RoleIcon size={16} className={selected ? "text-blue-300" : "text-slate-500"} />
-            <p className={cx("mt-2 mb-0.5 text-[12.5px] font-bold", selected ? "text-white" : "text-slate-300")}>
+  key={role.id}
+  onClick={() => onSelect(role.id)}
+  className={cx(
+    "group text-left rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
+    selected
+      ? "border-indigo-500 bg-indigo-50 shadow-md"
+      : "border-gray-200 bg-white hover:border-indigo-300"
+  )}
+>
+            <div
+  className={cx(
+    "flex h-11 w-11 items-center justify-center rounded-xl transition-all",
+    selected
+      ? "bg-indigo-100"
+      : "bg-gray-100 group-hover:bg-indigo-50"
+  )}
+>
+  <RoleIcon
+    size={22}
+    className={cx(
+      selected
+        ? "text-indigo-600"
+        : "text-gray-600 group-hover:text-indigo-600"
+    )}
+  />
+</div>
+            <p
+  className={cx(
+    "mt-4 text-base font-semibold",
+    selected ? "text-slate-900" : "text-slate-800"
+  )}
+>
               {role.label}
             </p>
-            <p className="m-0 text-[10.5px] text-slate-500 leading-tight">{role.blurb}</p>
+           <p className="mt-2 text-sm leading-6 text-slate-500">{role.blurb}</p>
           </button>
         );
       })}
