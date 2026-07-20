@@ -220,3 +220,4 @@ __marimo__/
 .vscode/
 tests/
 data/chroma_db/
+.env
