@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { login as loginService } from "../services/authService";
+import { login as loginService, logout as logoutService } from "../services/authService";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -10,7 +10,10 @@ export function useAuth() {
     return loggedInUser;
   }, []);
 
-  const logout = useCallback(() => setUser(null), []);
+  const logout = useCallback(() => {
+    logoutService();
+    setUser(null);
+  }, []);
 
   return { user, login, logout };
 }

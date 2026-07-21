@@ -1,6 +1,8 @@
 import express from "express";
+import { param } from "express-validator";
 
 import upload from "../middleware/uploadMiddleware.js";
+import validate from "../middleware/validateMiddleware.js";
 
 import {
     uploadDocument,
@@ -11,24 +13,21 @@ import {
 
 const router = express.Router();
 
-// Upload a document
-router.post(
-    "/upload",
-    upload.single("file"),
-    uploadDocument
-);
+const validateMongoId = [
+    param("id").isMongoId().withMessage("Invalid document id"),
+    validate,
+];
 
-// Get all uploaded documents
-router.get(
-    "/",
-    getDocuments
-);
+// Upload a document
+router.post("/upload", upload.single("file"), uploadDocument);
+
+// Get all uploaded documents (optional ?page=&limit=&search=)
+router.get("/", getDocuments);
 
 // Get a single document
-router.get(
-    "/:id",
-    getDocumentById
-);
-router.delete("/:id", deleteDocument);
+router.get("/:id", validateMongoId, getDocumentById);
+
+// Delete a document
+router.delete("/:id", validateMongoId, deleteDocument);
 
 export default router;

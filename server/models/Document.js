@@ -19,11 +19,19 @@ const documentSchema = new mongoose.Schema(
 
     fileType: String,
 
+    fileSize: Number,
+
     chunkCount: Number,
 
     analysis: {
         type: Object,
         default: {}
+    },
+
+    uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: false
     }
 
 },
@@ -31,5 +39,7 @@ const documentSchema = new mongoose.Schema(
     timestamps: true
 }
 );
+
+documentSchema.index({ originalName: "text" });
 
 export default mongoose.model("Document", documentSchema);

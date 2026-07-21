@@ -1,10 +1,16 @@
-import { COMPLIANCE_ITEMS, COMPLIANCE_METRICS } from "../constants/complianceData";
+import api from "./api";
 
-// TODO(backend): replace with `axios.get("/api/compliance/items")`
-export const getComplianceItems = async () => COMPLIANCE_ITEMS;
+export const getComplianceItems = async () => {
+  const res = await api.get("/compliance/items");
+  return res.data.items;
+};
 
-// TODO(backend): replace with `axios.get("/api/compliance/metrics")`
-export const getComplianceMetrics = async () => COMPLIANCE_METRICS;
+export const getComplianceMetrics = async () => {
+  const res = await api.get("/compliance/metrics");
+  return res.data.metrics;
+};
 
-// TODO(backend): replace with `axios.post("/api/compliance/report")`
-export const generateComplianceReport = async () => ({ ok: true, url: "/reports/compliance-latest.pdf" });
+export const generateComplianceReport = async () => {
+  const res = await api.post("/compliance/report");
+  return res.data;
+};

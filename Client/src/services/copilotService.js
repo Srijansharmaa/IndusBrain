@@ -1,10 +1,16 @@
-import { AI_ANSWER, INITIAL_COPILOT_MESSAGE, SAMPLE_QUERIES } from "../constants/copilotData";
+import api from "./api";
 
-// TODO(backend): replace with `axios.get("/api/copilot/suggested-queries")`
-export const getSuggestedQueries = async () => SAMPLE_QUERIES;
+export const getSuggestedQueries = async () => {
+  const res = await api.get("/copilot/suggested-queries");
+  return res.data.suggestedQueries;
+};
 
-// TODO(backend): replace with `axios.get("/api/copilot/welcome-message")`
-export const getInitialMessage = async () => INITIAL_COPILOT_MESSAGE;
+export const getInitialMessage = async () => {
+  const res = await api.get("/copilot/welcome-message");
+  return res.data.message;
+};
 
-// TODO(backend): replace with `axios.post("/api/copilot/ask", { query })`
-export const askCopilot = async (query) => AI_ANSWER;
+export const askCopilot = async (query) => {
+  const res = await api.post("/copilot/ask", { query });
+  return res.data.answer;
+};

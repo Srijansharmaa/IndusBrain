@@ -1,16 +1,21 @@
-import { GRAPH_NODES, GRAPH_EDGES, HERO_PATH, findNodeById, findRelatedNodeIds } from "../constants/graphData";
+import api from "./api";
 
-// TODO(backend): replace with `axios.get("/api/graph/nodes")`
-export const getGraphNodes = async () => GRAPH_NODES;
+export const getGraphNodes = async () => {
+  const res = await api.get("/graph/nodes");
+  return res.data.nodes;
+};
 
-// TODO(backend): replace with `axios.get("/api/graph/edges")`
-export const getGraphEdges = async () => GRAPH_EDGES;
+export const getGraphEdges = async () => {
+  const res = await api.get("/graph/edges");
+  return res.data.edges;
+};
 
-// TODO(backend): replace with `axios.get("/api/graph/hero-path")`
-export const getHeroPath = async () => HERO_PATH;
+export const getHeroPath = async () => {
+  const res = await api.get("/graph/hero-path");
+  return res.data.heroPath;
+};
 
-// TODO(backend): replace with `axios.get(`/api/graph/nodes/${nodeId}`)`
-export const getNodeDetails = async (nodeId) => ({
-  node: findNodeById(nodeId),
-  relatedIds: findRelatedNodeIds(nodeId),
-});
+export const getNodeDetails = async (nodeId) => {
+  const res = await api.get(`/graph/nodes/${nodeId}`);
+  return { node: res.data.node, relatedIds: res.data.relatedIds };
+};

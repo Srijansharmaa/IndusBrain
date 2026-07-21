@@ -11,19 +11,22 @@ from ai_engine.config import SUPPORTED_FILES
 from ai_engine.pipelines.document_pipeline import DocumentPipeline
 from ai_engine.embeddings.embedding_model import EmbeddingModel
 from ai_engine.vector_db.chroma_manager import ChromaManager
+from ai_engine.rag.rag_pipeline import RAGPipeline
 
 
 pipeline = None
 chroma = None
+rag_pipeline = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global pipeline, chroma
+    global pipeline, chroma, rag_pipeline
 
     print("🚀 Starting IndusBrain...")
 
     pipeline = DocumentPipeline()
     chroma = ChromaManager()
+    rag_pipeline = RAGPipeline()
     print("Chroma count:", chroma.collection.count())
     print("📦 Loading embedding model...")
     EmbeddingModel.get_model()
@@ -231,6 +234,9 @@ class SearchRequest(BaseModel):
     query: str
     k: int = 5
 
+class RAGRequest(BaseModel):
+    query: str
+
 
 @app.post("/search")
 async def semantic_search(request: SearchRequest):
@@ -261,3 +267,26 @@ async def semantic_search(request: SearchRequest):
         "success": True,
         "results": formatted
     }
+
+    # ==========================================================
+# AI Copilot (RAG)
+# ==========================================================
+
+@app.post("/rag/ask")
+async def ask_question(request: RAGRequest):
+
+    try:
+
+        result = rag_pipeline.ask(request.query)
+
+        return {
+            "success": True,
+            **result
+        }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )

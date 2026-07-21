@@ -1,13 +1,21 @@
-import { KNOWLEDGE_GROWTH, DEPT_ACTIVITY, RADAR_DATA, ANALYTICS_METRICS } from "../constants/analyticsData";
+import api from "./api";
 
-// TODO(backend): replace with `axios.get("/api/analytics/knowledge-growth")`
-export const getKnowledgeGrowth = async () => KNOWLEDGE_GROWTH;
+export const getKnowledgeGrowth = async () => {
+  const res = await api.get("/analytics/knowledge-growth");
+  return res.data.knowledgeGrowth;
+};
 
-// TODO(backend): replace with `axios.get("/api/analytics/department-activity")`
-export const getDepartmentActivity = async () => DEPT_ACTIVITY;
+export const getDepartmentActivity = async () => {
+  const res = await api.get("/analytics/department-activity");
+  return res.data.departmentActivity;
+};
 
-// TODO(backend): replace with `axios.get("/api/analytics/knowledge-health")`
-export const getKnowledgeHealthRadar = async () => RADAR_DATA;
+export const getKnowledgeHealthRadar = async () => {
+  const res = await api.get("/analytics/knowledge-health");
+  return res.data.radar;
+};
 
-// TODO(backend): replace with `axios.get("/api/analytics/metrics")`
-export const getAnalyticsMetrics = async () => ANALYTICS_METRICS;
+export const getAnalyticsMetrics = async () => {
+  const res = await api.get("/analytics/metrics");
+  return res.data.metrics;
+};

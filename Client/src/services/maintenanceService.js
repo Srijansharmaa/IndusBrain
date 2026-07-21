@@ -1,10 +1,16 @@
-import { EQUIPMENT_HEALTH, RECOMMENDED_ACTIONS, RECENT_INCIDENTS } from "../constants/maintenanceData";
+import api from "./api";
 
-// TODO(backend): replace with `axios.get("/api/maintenance/equipment-health")`
-export const getEquipmentHealth = async () => EQUIPMENT_HEALTH;
+export const getEquipmentHealth = async () => {
+  const res = await api.get("/maintenance/equipment-health");
+  return res.data.equipmentHealth;
+};
 
-// TODO(backend): replace with `axios.get("/api/maintenance/recommended-actions")`
-export const getRecommendedActions = async () => RECOMMENDED_ACTIONS;
+export const getRecommendedActions = async () => {
+  const res = await api.get("/maintenance/recommended-actions");
+  return res.data.recommendedActions;
+};
 
-// TODO(backend): replace with `axios.get("/api/maintenance/recent-incidents")`
-export const getRecentIncidents = async () => RECENT_INCIDENTS;
+export const getRecentIncidents = async () => {
+  const res = await api.get("/maintenance/recent-incidents");
+  return res.data.recentIncidents;
+};

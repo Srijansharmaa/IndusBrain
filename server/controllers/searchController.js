@@ -1,25 +1,14 @@
-import axios from "axios";
+import { searchDocuments } from "../services/aiService.js";
+import asyncHandler from "../utils/asyncHandler.js";
 
-export const semanticSearch = async (req, res) => {
+/**
+ * @route POST /api/search
+ * Body: { query: string, k?: number }
+ */
+export const semanticSearch = asyncHandler(async (req, res) => {
+    const { query, k } = req.body;
 
-    try {
+    const result = await searchDocuments(query, k);
 
-        const response = await axios.post(
-            `${process.env.AI_ENGINE_URL}/search`,
-            req.body
-        );
-
-        res.json(response.data);
-
-    } catch (err) {
-
-        console.error(err);
-
-        res.status(500).json({
-            success: false,
-            message: "Search failed."
-        });
-
-    }
-
-};
+    res.json(result);
+});

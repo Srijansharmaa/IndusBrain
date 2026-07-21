@@ -1,13 +1,21 @@
-import { ADMIN_USERS, ADMIN_METRICS, ACTIVITY_LOG } from "../constants/adminData";
+import api from "./api";
 
-// TODO(backend): replace with `axios.get("/api/admin/users")`
-export const getAdminUsers = async () => ADMIN_USERS;
+export const getAdminUsers = async () => {
+  const res = await api.get("/admin/users");
+  return res.data.users;
+};
 
-// TODO(backend): replace with `axios.get("/api/admin/metrics")`
-export const getAdminMetrics = async () => ADMIN_METRICS;
+export const getAdminMetrics = async () => {
+  const res = await api.get("/admin/metrics");
+  return res.data.metrics;
+};
 
-// TODO(backend): replace with `axios.get("/api/admin/activity-log")`
-export const getActivityLog = async () => ACTIVITY_LOG;
+export const getActivityLog = async () => {
+  const res = await api.get("/admin/activity-log");
+  return res.data.activityLog;
+};
 
-// TODO(backend): replace with `axios.post("/api/admin/users/invite", { email, role })`
-export const inviteUser = async (email, role) => ({ ok: true });
+export const inviteUser = async (email, role) => {
+  const res = await api.post("/admin/users/invite", { email, role });
+  return res.data;
+};
