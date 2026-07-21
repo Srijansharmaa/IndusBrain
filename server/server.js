@@ -1,5 +1,8 @@
 import dotenv from "dotenv";
-dotenv.config();
+const result = dotenv.config();
+console.log("dotenv result:", result);
+console.log("cwd:", process.cwd());
+console.log("AI_ENGINE_URL from server.js:", process.env.AI_ENGINE_URL);
 
 import express from "express";
 import cors from "cors";

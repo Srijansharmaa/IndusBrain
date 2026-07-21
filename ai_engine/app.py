@@ -260,4 +260,32 @@ async def semantic_search(request: SearchRequest):
     return {
         "success": True,
         "results": formatted
+<<<<<<< HEAD
     }
+=======
+    }
+
+
+# ==========================================================
+# AI Copilot (RAG)
+# ==========================================================
+
+@app.post("/rag/ask")
+async def ask_question(request: RAGRequest):
+
+    try:
+
+        result = rag_pipeline.ask(request.query)
+
+        return {
+            "success": True,
+            **result
+        }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+>>>>>>> ff47bab (Add copilot and dashboard improvements)
