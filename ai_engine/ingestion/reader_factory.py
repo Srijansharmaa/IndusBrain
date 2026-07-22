@@ -1,26 +1,38 @@
 from pathlib import Path
+import importlib
 
 class ReaderFactory:
+    """
+    Factory class that returns the appropriate reader
+    based on the file extension.
+    """
+
+    READERS = {
+        ".pdf": ("ai_engine.ingestion.pdf_reader", "PDFReader"),
+        ".docx": ("ai_engine.ingestion.docx_reader", "DOCXReader"),
+        ".xlsx": ("ai_engine.ingestion.excel_reader", "ExcelReader"),
+        ".xls": ("ai_engine.ingestion.excel_reader", "ExcelReader"),
+        ".png": ("ai_engine.ingestion.image_reader", "ImageReader"),
+        ".jpg": ("ai_engine.ingestion.image_reader", "ImageReader"),
+        ".jpeg": ("ai_engine.ingestion.image_reader", "ImageReader"),
+    }
 
     @classmethod
     def get_reader(cls, file_path):
 
         extension = Path(file_path).suffix.lower()
 
-        if extension == ".pdf":
-            from ai_engine.ingestion.pdf_reader import PDFReader
-            return PDFReader(file_path)
+        reader_info = cls.READERS.get(extension)
 
-        elif extension == ".docx":
-            from ai_engine.ingestion.docx_reader import DOCXReader
-            return DOCXReader(file_path)
+        if reader_info is None:
+            raise ValueError(
+                f"Unsupported file type: {extension}"
+            )
 
-        elif extension in [".xlsx", ".xls"]:
-            from ai_engine.ingestion.excel_reader import ExcelReader
-            return ExcelReader(file_path)
+        module_name, class_name = reader_info
 
-        elif extension in [".png", ".jpg", ".jpeg"]:
-            from ai_engine.ingestion.image_reader import ImageReader
-            return ImageReader(file_path)
+        module = importlib.import_module(module_name)
 
-        raise ValueError(f"Unsupported file type: {extension}")
+        reader_class = getattr(module, class_name)
+
+        return reader_class(file_path)

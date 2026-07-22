@@ -253,3 +253,4 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+data/knowledge_graph.json
