@@ -26,7 +26,7 @@ export default function ChatMessage({ role, text, meta }) {
           "max-w-[78%] rounded-2xl px-5 py-4 text-sm leading-7 shadow-sm transition-all",
           isUser
             ? "rounded-br-md bg-gradient-to-r from-indigo-600 to-violet-600 text-white"
-            : "rounded-bl-md border border-gray-200 bg-white text-slate-800"
+            : "rounded-bl-md border border-indigo-100 bg-gradient-to-br from-white to-indigo-50 text-slate-800"
         )}
       >
         <p className="whitespace-pre-wrap">{text}</p>

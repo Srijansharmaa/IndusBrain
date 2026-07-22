@@ -1,6 +1,10 @@
 import SuggestedQuery from "../models/SuggestedQuery.js";
 import Config from "../models/Config.js";
 import { searchDocuments } from "../services/aiService.js";
+<<<<<<< HEAD
+=======
+import { askRAG } from "../services/aiService.js";
+>>>>>>> ab86b5c (Update project)
 import asyncHandler from "../utils/asyncHandler.js";
 
 export const getSuggestedQueries = asyncHandler(async (req, res) => {
@@ -23,6 +27,7 @@ export const getInitialMessage = asyncHandler(async (req, res) => {
     });
 });
 
+<<<<<<< HEAD
 /**
  * @route POST /api/copilot/ask
  * Real integration: runs the query through the FastAPI AI engine's
@@ -49,6 +54,34 @@ export const askCopilot = asyncHandler(async (req, res) => {
                 actions: [],
             },
         });
+=======
+export const askCopilot = asyncHandler(async (req, res) => {
+    const { query } = req.body;
+
+    const ragResult = await askRAG(query);
+    const results = ragResult?.results || [];
+
+    if (results.length === 0) {
+        res.json({
+
+    success: true,
+
+    answer: {
+
+        text: ragResult.answer,
+
+        confidence: ragResult.confidence,
+
+        sources: ragResult.sources,
+
+        actions: ragResult.recommended_actions,
+
+        entities: ragResult.entities
+
+    }
+
+});
+>>>>>>> ab86b5c (Update project)
     }
 
     const text = results

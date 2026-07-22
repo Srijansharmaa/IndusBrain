@@ -1,3 +1,4 @@
+import "dotenv/config";
 import axios from "axios";
 import FormData from "form-data";
 import fs from "fs";
@@ -61,6 +62,35 @@ export const searchDocuments = async (query, k = 5) => {
     }
 };
 
+<<<<<<< HEAD
+=======
+    const response = await axios.post(
+      `${AI_ENGINE_URL}/process-document`,
+      formData,
+      {
+        headers: formData.getHeaders(),
+      }
+    );
+
+        return response.data;
+    } catch (error) {
+        handleAiEngineError(error, "document processing");
+    }
+};
+
+/**
+ * Runs a semantic search query against FastAPI's /search endpoint.
+ */
+export const searchDocuments = async (query, k = 5) => {
+    try {
+        const response = await aiClient.post("/search", { query, k });
+        return response.data;
+    } catch (error) {
+        handleAiEngineError(error, "semantic search");
+    }
+};
+
+>>>>>>> ab86b5c (Update project)
 /**
  * Basic reachability check, used by /api/health.
  */

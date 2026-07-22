@@ -9,7 +9,8 @@ export default function UsersTable({ users, onInvite }) {
         <span className="font-bold text-[14.5px] text-ink">Users & Permissions</span>
         <button
           onClick={onInvite}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border-none bg-primary text-white text-xs font-bold cursor-pointer font-sans"
+          className="flex it
+          ems-center gap-1.5 px-3.5 py-2 rounded-lg border-none bg-primary text-white text-xs font-bold cursor-pointer font-sans"
         >
           <Plus size={13} /> Invite user
         </button>

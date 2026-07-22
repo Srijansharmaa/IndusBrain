@@ -266,9 +266,19 @@ async def semantic_search(request: SearchRequest):
     return {
         "success": True,
         "results": formatted
+<<<<<<< HEAD
     }
 
     # ==========================================================
+=======
+<<<<<<< HEAD
+    }
+=======
+    }
+
+
+# ==========================================================
+>>>>>>> ab86b5c (Update project)
 # AI Copilot (RAG)
 # ==========================================================
 
@@ -289,4 +299,9 @@ async def ask_question(request: RAGRequest):
         raise HTTPException(
             status_code=500,
             detail=str(e)
+<<<<<<< HEAD
         )
+=======
+        )
+>>>>>>> ff47bab (Add copilot and dashboard improvements)
+>>>>>>> ab86b5c (Update project)

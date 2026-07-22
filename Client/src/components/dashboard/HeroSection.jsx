@@ -21,7 +21,7 @@ export default function HeroSection({ user, onAskCopilot }) {
       <div className="flex justify-between flex-wrap gap-4">
         <div className="max-w-[560px]">
           <Badge tone="primary" className="!text-blue-300 !bg-navy-soft">{role?.label}</Badge>
-          <h1 className="text-white text-4xl font-bold mt-3 mb-1.5 tracking-tight">
+          <h1 className="text-white text-4xl font-extrabold mt-3 mb-1.5 tracking-tight">
             Good afternoon, {user.name.split(" ")[0]}
           </h1>
           <p className="text-slate-400 text-[13.5px] leading-relaxed m-0">

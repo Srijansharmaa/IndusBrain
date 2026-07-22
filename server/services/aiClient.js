@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+import "dotenv/config";
+>>>>>>> ab86b5c (Update project)
 import axios from "axios";
 
 const aiClient = axios.create({
