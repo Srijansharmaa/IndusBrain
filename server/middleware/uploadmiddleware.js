@@ -10,14 +10,13 @@ if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
+// Must stay in sync with ai_engine/config.py SUPPORTED_FILES. Express should
+// reject an unsupported file immediately rather than accepting the upload
+// and letting it fail downstream at the AI engine.
 const ALLOWED_EXTENSIONS = new Set([
     ".pdf",
     ".docx",
-    ".doc",
     ".xlsx",
-    ".xls",
-    ".csv",
-    ".txt",
     ".png",
     ".jpg",
     ".jpeg",

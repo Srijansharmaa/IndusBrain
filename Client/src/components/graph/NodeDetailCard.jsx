@@ -1,7 +1,6 @@
 import React from "react";
 import Badge from "../common/Badge";
 import { NODE_TYPE_STYLES } from "../../constants/colors";
-import { GRAPH_EDGES } from "../../constants/graphData";
 
 const TONE_BY_TYPE = {
   equipment: "primary",
@@ -11,14 +10,10 @@ const TONE_BY_TYPE = {
   recommendation: "success",
 };
 
-export default function NodeDetailCard({ node }) {
+export default function NodeDetailCard({ node, relationCount = 0 }) {
   if (!node) return null;
 
   const style = NODE_TYPE_STYLES[node.type];
-
-  const relationCount = GRAPH_EDGES.filter(
-    ([a, b]) => a === node.id || b === node.id
-  ).length;
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-4">

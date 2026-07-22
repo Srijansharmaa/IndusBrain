@@ -1,10 +1,6 @@
 import SuggestedQuery from "../models/SuggestedQuery.js";
 import Config from "../models/Config.js";
-import { searchDocuments } from "../services/aiService.js";
-<<<<<<< HEAD
-=======
-import { askRAG } from "../services/aiService.js";
->>>>>>> ab86b5c (Update project)
+import { askRag } from "../services/aiService.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 export const getSuggestedQueries = asyncHandler(async (req, res) => {
@@ -27,83 +23,33 @@ export const getInitialMessage = asyncHandler(async (req, res) => {
     });
 });
 
-<<<<<<< HEAD
 /**
  * @route POST /api/copilot/ask
- * Real integration: runs the query through the FastAPI AI engine's
- * semantic search (/search) and turns the top retrieved chunks into an
- * answer object matching the shape the frontend already renders.
- * There is no generative/RAG-answer endpoint exposed by the AI engine
- * (ai_engine/app.py only exposes /search), so this synthesizes a
- * best-effort answer from the retrieved passages rather than fabricating
- * a fully generated response.
+ * Real integration: runs the query through the FastAPI AI engine's actual
+ * RAG pipeline (/rag/ask), which retrieves relevant chunks AND generates a
+ * Gemini-authored answer from them. This does not re-implement retrieval or
+ * answer synthesis in Express - the AI engine already owns that logic.
+ *
+ * Known dependency risk: ai_engine/llm/gemini_llm.py raises at FastAPI
+ * startup if GEMINI_API_KEY is not set, so /rag/ask (and therefore this
+ * endpoint) is unavailable whenever that key is missing. That surfaces here
+ * as a 502/504 from aiService's error handling, not a silent failure.
  */
 export const askCopilot = asyncHandler(async (req, res) => {
     const { query } = req.body;
 
-    const searchResult = await searchDocuments(query, 5);
-    const results = searchResult?.results || [];
+    const ragResult = await askRag(query);
 
-    if (results.length === 0) {
-        return res.json({
-            success: true,
-            answer: {
-                text: "I couldn't find anything relevant to that in the knowledge base yet.",
-                confidence: 0,
-                sources: [],
-                actions: [],
-            },
-        });
-=======
-export const askCopilot = asyncHandler(async (req, res) => {
-    const { query } = req.body;
-
-    const ragResult = await askRAG(query);
-    const results = ragResult?.results || [];
-
-    if (results.length === 0) {
-        res.json({
-
-    success: true,
-
-    answer: {
-
-        text: ragResult.answer,
-
-        confidence: ragResult.confidence,
-
-        sources: ragResult.sources,
-
-        actions: ragResult.recommended_actions,
-
-        entities: ragResult.entities
-
-    }
-
-});
->>>>>>> ab86b5c (Update project)
-    }
-
-    const text = results
-        .slice(0, 3)
-        .map((r) => r.text)
-        .join("\n\n");
-
-    const sources = [
-        ...new Set(
-            results.map((r) => r.metadata?.filename || r.metadata?.source || r.id)
-        ),
-    ];
-
-    const confidence = Math.round(results[0].score);
+    const sources = (ragResult?.sources || [])
+        .map((s) => s.source)
+        .filter(Boolean);
+    const uniqueSources = [...new Set(sources)];
 
     res.json({
         success: true,
         answer: {
-            text,
-            confidence,
-            sources,
-            actions: [],
+            text: ragResult?.answer || "I couldn't find anything relevant to that in the knowledge base yet.",
+            sources: uniqueSources,
         },
     });
 });

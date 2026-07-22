@@ -5,22 +5,69 @@ import ActivityLog from "../models/ActivityLog.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import { roleLabel, plantLabel } from "../utils/labels.js";
+import escapeRegex from "../utils/escapeRegex.js";
+
+const ALLOWED_USER_SORT_FIELDS = new Set(["name", "email", "role", "status", "createdAt"]);
 
 /**
  * @route GET /api/admin/users
+ * Query params (all optional, all backward compatible - calling with none
+ * behaves exactly as before): page, limit, search (name/email), role,
+ * status, sort (field name, prefix with "-" for descending).
  */
 export const getAdminUsers = asyncHandler(async (req, res) => {
-    const users = await User.find().sort({ createdAt: -1 });
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit, 10) || 0, 100);
+    const search = req.query.search?.trim();
+    const { role, status } = req.query;
+
+    const filter = {};
+    if (search) {
+        const safe = escapeRegex(search);
+        filter.$or = [
+            { name: { $regex: safe, $options: "i" } },
+            { email: { $regex: safe, $options: "i" } },
+        ];
+    }
+    const ALLOWED_ROLES = new Set(["maint", "plant", "safety", "compliance", "quality", "admin"]);
+    const ALLOWED_STATUSES = new Set(["Active", "Invited", "Suspended"]);
+    if (role && ALLOWED_ROLES.has(role)) filter.role = role;
+    if (status && ALLOWED_STATUSES.has(status)) filter.status = status;
+
+    let sortField = "createdAt";
+    let sortDir = -1;
+    if (req.query.sort) {
+        const raw = String(req.query.sort);
+        const desc = raw.startsWith("-");
+        const field = desc ? raw.slice(1) : raw;
+        if (ALLOWED_USER_SORT_FIELDS.has(field)) {
+            sortField = field;
+            sortDir = desc ? -1 : 1;
+        }
+    }
+
+    let query = User.find(filter).sort({ [sortField]: sortDir });
+    if (limit) {
+        query = query.skip((page - 1) * limit).limit(limit);
+    }
+
+    const [users, total] = await Promise.all([query, User.countDocuments(filter)]);
 
     res.json({
         success: true,
         users: users.map((u) => ({
             id: u._id,
             name: u.name,
+            email: u.email,
+            roleId: u.role,
             role: roleLabel(u.role),
+            plantId: u.plant,
             plant: plantLabel(u.plant),
             status: u.status,
         })),
+        pagination: limit
+            ? { page, limit, total, pages: Math.ceil(total / limit) }
+            : { total },
     });
 });
 
@@ -47,6 +94,76 @@ export const getActivityLog = asyncHandler(async (req, res) => {
         success: true,
         activityLog: logs.map((l) => l.message),
     });
+});
+
+/**
+ * @route PATCH /api/admin/users/:id
+ * Updates role/plant/status on an existing user. This is completion of
+ * basic CRUD on the User collection that already existed (create via
+ * invite, read via list) - not a new business domain. Covers
+ * activate/deactivate (via status) and role reassignment.
+ */
+export const updateAdminUser = asyncHandler(async (req, res) => {
+    const ALLOWED_ROLES = new Set(["maint", "plant", "safety", "compliance", "quality", "admin"]);
+    const ALLOWED_STATUSES = new Set(["Active", "Invited", "Suspended"]);
+    const { role, plant, status } = req.body;
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    if (role !== undefined) {
+        if (!ALLOWED_ROLES.has(role)) throw new ApiError(400, "Invalid role");
+        user.role = role;
+    }
+    if (plant !== undefined) user.plant = plant;
+    if (status !== undefined) {
+        if (!ALLOWED_STATUSES.has(status)) throw new ApiError(400, "Invalid status");
+        user.status = status;
+    }
+
+    await user.save();
+
+    await ActivityLog.create({
+        message: `Updated ${user.email} (role: ${user.role}, status: ${user.status})`,
+        actor: req.user?._id,
+    });
+
+    res.json({
+        success: true,
+        message: "User updated",
+        user: {
+            id: user._id,
+            name: user.name,
+            role: roleLabel(user.role),
+            plant: plantLabel(user.plant),
+            status: user.status,
+        },
+    });
+});
+
+/**
+ * @route DELETE /api/admin/users/:id
+ */
+export const deleteAdminUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    if (String(user._id) === String(req.user._id)) {
+        throw new ApiError(400, "You cannot delete your own account");
+    }
+
+    await user.deleteOne();
+
+    await ActivityLog.create({
+        message: `Removed user ${user.email}`,
+        actor: req.user?._id,
+    });
+
+    res.json({ success: true, message: "User removed" });
 });
 
 /**

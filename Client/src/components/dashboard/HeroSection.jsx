@@ -4,16 +4,8 @@ import Card from "../common/Card";
 import Badge from "../common/Badge";
 import Button from "../common/Button";
 import { getRoleById } from "../../constants/roles";
-import { HERO_PATH } from "../../constants/graphData";
 
-const HERO_STATS = [
-  { label: "Active alerts", value: "7", tone: "text-warning" },
-  { label: "Compliance score", value: "92%", tone: "text-success" },
-  { label: "AI queries today", value: "128", tone: "text-primary" },
-  { label: "Docs indexed", value: "2,040", tone: "text-purple" },
-];
-
-export default function HeroSection({ user, onAskCopilot }) {
+export default function HeroSection({ user, onAskCopilot, heroStats = [], heroPath = [] }) {
   const role = getRoleById(user.role);
 
   return (
@@ -21,7 +13,7 @@ export default function HeroSection({ user, onAskCopilot }) {
       <div className="flex justify-between flex-wrap gap-4">
         <div className="max-w-[560px]">
           <Badge tone="primary" className="!text-blue-300 !bg-navy-soft">{role?.label}</Badge>
-          <h1 className="text-white text-4xl font-extrabold mt-3 mb-1.5 tracking-tight">
+          <h1 className="text-white text-4xl font-bold mt-3 mb-1.5 tracking-tight">
             Good afternoon, {user.name.split(" ")[0]}
           </h1>
           <p className="text-slate-400 text-[13.5px] leading-relaxed m-0">
@@ -29,7 +21,7 @@ export default function HeroSection({ user, onAskCopilot }) {
             30 days, and knowledge coverage across Maintenance improved 4.2% this week.
           </p>
           <div className="flex gap-2.5 mt-4">
-            <Button onClick={() => onAskCopilot(HERO_PATH, "p101")}>
+            <Button onClick={() => onAskCopilot(heroPath, heroPath[0])}>
               <Bot size={14} /> Ask AI Copilot
             </Button>
             <Button variant="ghostDark">
@@ -38,7 +30,7 @@ export default function HeroSection({ user, onAskCopilot }) {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2.5 min-w-[220px]">
-          {HERO_STATS.map((stat) => (
+          {heroStats.map((stat) => (
             <div key={stat.label} className="rounded-xl
 bg-white/10
 backdrop-blur-md

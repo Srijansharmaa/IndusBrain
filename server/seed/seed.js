@@ -29,10 +29,28 @@ const ADMIN_METRICS = [
     { domain: "admin", label: "Graph Nodes", value: "18,204", delta: "+2.1%", up: true, icon: "Share2", color: "warning", order: 3 },
 ];
 
+const DASHBOARD_HERO_METRICS = [
+    { domain: "dashboard", group: "hero", label: "Active alerts", value: "7", color: "warning", order: 0 },
+    { domain: "dashboard", group: "hero", label: "Compliance score", value: "92%", color: "success", order: 1 },
+    { domain: "dashboard", group: "hero", label: "AI queries today", value: "128", color: "primary", order: 2 },
+    { domain: "dashboard", group: "hero", label: "Docs indexed", value: "2,040", color: "purple", order: 3 },
+];
+
+const DASHBOARD_CARD_METRICS = [
+    { domain: "dashboard", group: "cards", label: "Indexed Documents", value: "2,040", delta: "+84 today", up: true, icon: "FileText", color: "primary", order: 0 },
+    { domain: "dashboard", group: "cards", label: "AI Decisions", value: "6,742", delta: "+18%", up: true, icon: "Bot", color: "purple", order: 1 },
+    { domain: "dashboard", group: "cards", label: "Critical Risks", value: "7", delta: "-2 resolved", up: true, icon: "AlertTriangle", color: "warning", order: 2 },
+    { domain: "dashboard", group: "cards", label: "Compliance", value: "92%", delta: "Excellent", up: true, icon: "ShieldCheck", color: "success", order: 3 },
+];
+
 const ACTIVITY_LOG = [
-    "Admin updated permissions for Compliance Officer role",
-    "New plant added: Adani – Mundra Power",
-    "System backup completed successfully",
+    { message: "Admin updated permissions for Compliance Officer role", type: "general" },
+    { message: "New plant added: Adani – Mundra Power", type: "general" },
+    { message: "System backup completed successfully", type: "general" },
+    { message: "S. Verma logged maintenance on Pump P101", type: "maintenance" },
+    { message: "AI Copilot answered 3 queries on Motor M-12", type: "ai" },
+    { message: "Compliance certificate renewed – Boiler Unit 2", type: "compliance" },
+    { message: "New inspection report uploaded – Unit 4", type: "document" },
 ];
 
 const KNOWLEDGE_GROWTH = [
@@ -146,8 +164,8 @@ const DEMO_USERS = [
 ];
 
 const collections = [
-    { model: Metric, data: [...ADMIN_METRICS, ...ANALYTICS_METRICS, ...COMPLIANCE_METRICS] },
-    { model: ActivityLog, data: ACTIVITY_LOG.map((message) => ({ message })) },
+    { model: Metric, data: [...ADMIN_METRICS, ...ANALYTICS_METRICS, ...COMPLIANCE_METRICS, ...DASHBOARD_HERO_METRICS, ...DASHBOARD_CARD_METRICS] },
+    { model: ActivityLog, data: ACTIVITY_LOG },
     { model: KnowledgeGrowth, data: KNOWLEDGE_GROWTH },
     { model: DepartmentActivity, data: DEPT_ACTIVITY },
     { model: KnowledgeHealth, data: RADAR_DATA },

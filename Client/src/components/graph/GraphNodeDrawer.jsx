@@ -9,7 +9,6 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { NODE_TYPE_STYLES } from "../../constants/colors";
-import { findRelatedNodeIds, findNodeById } from "../../constants/graphData";
 
 const ICONS = {
   equipment: Cog,
@@ -21,12 +20,12 @@ const ICONS = {
 
 export default function GraphNodeDrawer({
   node,
+  relatedNodes = [],
   onClose,
   onSelectRelated,
 }) {
   if (!node) return null;
 
-  const relatedIds = findRelatedNodeIds(node.id);
   const Icon = ICONS[node.type];
 
   return (
@@ -67,7 +66,7 @@ export default function GraphNodeDrawer({
         <p className="mt-2 text-sm leading-7 text-gray-700">
           This node has{" "}
           <span className="font-semibold text-indigo-600">
-            {relatedIds.length}
+            {relatedNodes.length}
           </span>{" "}
           direct relationships within the enterprise knowledge graph,
           connecting assets, incidents, supporting documents and people.
@@ -83,7 +82,7 @@ export default function GraphNodeDrawer({
             </span>
 
             <span className="font-semibold">
-              {relatedIds.length}
+              {relatedNodes.length}
             </span>
           </div>
 
@@ -106,14 +105,13 @@ export default function GraphNodeDrawer({
         </h3>
 
         <div className="space-y-2">
-          {relatedIds.map((id) => {
-            const related = findNodeById(id);
+          {relatedNodes.map((related) => {
             if (!related) return null;
 
             return (
               <button
-                key={id}
-                onClick={() => onSelectRelated(id)}
+                key={related.id}
+                onClick={() => onSelectRelated(related.id)}
                 className="w-full flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 hover:bg-gray-50 transition"
               >
                 <div className="flex items-center gap-3">

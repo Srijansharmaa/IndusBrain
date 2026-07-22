@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+/*
+ * Design tokens. These were referenced by ~40 components across the app
+ * (bg-primary, text-ink, bg-card, border-hairline, etc.) but were never
+ * actually defined anywhere - no tailwind.config.js, no @theme block.
+ * Tailwind v4 silently drops utilities for undefined color names, so this
+ * gap meant most of the app's intended branding/colors were never being
+ * generated at all. This block defines them to match how they were
+ * evidently intended to be used throughout the existing components.
+ */
+@theme {
+  --color-primary: #4f46e5;
+  --color-purple: #7c3aed;
+  --color-danger: #dc2626;
+  --color-warning: #d97706;
+  --color-success: #059669;
+
+  --color-ink: #0f172a;
+  --color-subtext: #64748b;
+  --color-card: #ffffff;
+  --color-surface: #f8fafc;
+  --color-hairline: #e2e8f0;
+
+  --color-navy-soft: #1e293b;
+  --color-navy-line: #334155;
+
+  --radius-card: 1rem;
+}
+
+/*
+ * Dark mode: flips the same semantic tokens rather than requiring every
+ * component to carry its own dark: variants. Toggled via a "dark" class
+ * on <html> (see hooks/useDarkMode.js).
+ */
+:root.dark {
+  --color-ink: #f1f5f9;
+  --color-subtext: #94a3b8;
+  --color-card: #1e293b;
+  --color-surface: #0f172a;
+  --color-hairline: #334155;
+}
+
+/* Lightweight transition utilities - self-contained, no plugin dependency
+   (there is no tailwindcss-animate in package.json, so "animate-in fade-in"
+   style classes would silently generate no CSS at all). */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up {
+  animation: fade-in-up 0.2s ease-out;
+}

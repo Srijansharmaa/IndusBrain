@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+userSchema.index({ role: 1 });
+userSchema.index({ status: 1 });
+userSchema.index({ name: "text", email: "text" });
+
 userSchema.pre("save", async function hashPassword() {
     if (!this.isModified("password")) return;
 

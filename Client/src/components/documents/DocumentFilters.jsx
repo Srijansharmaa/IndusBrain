@@ -50,7 +50,7 @@ export default function DocumentFilters({
     {/* Hidden File Input */}
     <input
       type="file"
-      accept=".pdf,.doc,.docx,.xlsx,.xls,.png,.jpg,.jpeg"
+      accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg"
       ref={fileInputRef}
       onChange={handleFileChange}
       className="hidden"

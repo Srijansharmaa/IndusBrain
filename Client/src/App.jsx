@@ -12,6 +12,7 @@ import AdminPage from "./pages/AdminPage";
 import SettingsPage from "./pages/SettingsPage";
 import { useAuth } from "./hooks/useAuth";
 import { useKnowledgeGraph } from "./hooks/useKnowledgeGraph";
+import { useDarkMode } from "./hooks/useDarkMode";
 
 const PAGE_COMPONENTS = {
   dashboard: DashboardPage,
@@ -28,13 +29,24 @@ const PAGE_COMPONENTS = {
 export default function App() {
   const { user, login } = useAuth();
   const [page, setPage] = useState("dashboard");
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useDarkMode();
   const [searchQuery, setSearchQuery] = useState("");
+  const [pendingQuery, setPendingQuery] = useState(null);
   const graph = useKnowledgeGraph();
 
   if (!user) return <LoginScreen onLogin={login} />;
 
   const PageComponent = PAGE_COMPONENTS[page];
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim()) setPage("documents");
+  };
+
+  const askCopilotWithQuery = (text) => {
+    setPendingQuery(text);
+    setPage("copilot");
+  };
 
   return (
     <AppShell
@@ -43,12 +55,18 @@ export default function App() {
       user={user}
       dark={dark}
       setDark={setDark}
-      graph={graph}
-      onExpandGraph={() => setPage("graph")}
       searchQuery={searchQuery}
-      setSearchQuery={setSearchQuery}
+      setSearchQuery={handleSearch}
     >
-      <PageComponent user={user} graph={graph} searchQuery={searchQuery} />
+      <PageComponent
+        user={user}
+        graph={graph}
+        searchQuery={searchQuery}
+        pendingQuery={pendingQuery}
+        onConsumePendingQuery={() => setPendingQuery(null)}
+        onAskCopilotQuery={askCopilotWithQuery}
+        onSearchDocuments={handleSearch}
+      />
     </AppShell>
   );
 }

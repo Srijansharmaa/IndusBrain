@@ -3,15 +3,20 @@ import ChatWindow from "../components/copilot/ChatWindow";
 import KnowledgeGraphPanel from "../components/graph/KnowledgeGraphPanel";
 import { useStreamingText } from "../hooks/useStreamingText";
 import { askCopilot, getInitialMessage, getSuggestedQueries } from "../services/copilotService";
-import { HERO_PATH } from "../constants/graphData";
+import { getHeroPath } from "../services/graphService";
+import { useToast } from "../components/common/Toast";
 
-export default function CopilotPage({ graph }) {
+export default function CopilotPage({ graph, pendingQuery, onConsumePendingQuery, onSearchDocuments }) {
   const [messages, setMessages] = useState([]);
   const [suggestedQueries, setSuggestedQueries] = useState([]);
+  const [heroPath, setHeroPath] = useState([]);
+  const [asking, setAsking] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     getInitialMessage().then((msg) => setMessages([msg]));
     getSuggestedQueries().then(setSuggestedQueries);
+    getHeroPath().then(setHeroPath);
   }, []);
 
   const onPathStep = useCallback((path, node) => {
@@ -31,24 +36,46 @@ export default function CopilotPage({ graph }) {
   });
 
   const handleAsk = async (query) => {
-    if (!query.trim() || streaming) return;
+    if (!query.trim() || streaming || asking) return;
     setMessages((prev) => [...prev, { role: "user", text: query }]);
     graph.setActivePath([]);
     graph.setActiveNode(null);
+    setAsking(true);
 
-    const answer = await askCopilot(query);
-    lastMetaRef.current = answer;
-    start(answer.text, HERO_PATH);
+    try {
+      const answer = await askCopilot(query);
+      lastMetaRef.current = answer;
+      start(answer.text, heroPath);
+    } catch (err) {
+      const message =
+        err.response?.status === 502 || err.response?.status === 504
+          ? "The AI engine is unreachable right now. Please try again in a moment."
+          : err.response?.data?.message || "Something went wrong answering that question.";
+      setMessages((prev) => [...prev, { role: "ai", text: message, isError: true }]);
+      toast({ type: "error", message });
+    } finally {
+      setAsking(false);
+    }
   };
 
+  useEffect(() => {
+    if (pendingQuery) {
+      handleAsk(pendingQuery);
+      onConsumePendingQuery?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingQuery]);
+
   return (
-    <div className="grid grid-cols-[1.6fr_1fr] gap-4" style={{ height: "calc(100vh - 120px)" }}>
+    <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4" style={{ height: "calc(100vh - 120px)" }}>
       <ChatWindow
         messages={messages}
         streaming={streaming}
         streamedText={streamedText}
+        asking={asking}
         onAsk={handleAsk}
         suggestedQueries={suggestedQueries}
+        onSourceClick={onSearchDocuments}
       />
       <KnowledgeGraphPanel activePath={[]} activeNode={null} setActiveNode={graph.setActiveNode} />
     </div>

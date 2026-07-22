@@ -22,17 +22,19 @@ rag_pipeline = None
 async def lifespan(app: FastAPI):
     global pipeline, chroma, rag_pipeline
 
-    print("🚀 Starting IndusBrain...")
+    print(" Starting IndusBrain...")
 
     pipeline = DocumentPipeline()
     chroma = ChromaManager()
-    rag_pipeline = RAGPipeline()
     print("Chroma count:", chroma.collection.count())
-    print("📦 Loading embedding model...")
-    EmbeddingModel.get_model()
-    print("✅ Embedding model loaded.")
 
-    print("✅ AI Engine Ready!")
+    print("Loading embedding model...")
+    EmbeddingModel.get_model()
+    print("Embedding model loaded.")
+
+    rag_pipeline = RAGPipeline()
+
+    print("AI Engine Ready!")
 
     yield
 
@@ -207,10 +209,12 @@ def get_uploaded_documents():
 @app.post("/process-existing/{filename}")
 def process_existing(filename: str):
 
-    filepath = os.path.join(
-        UPLOAD_FOLDER,
-        filename
-    )
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+
+    print("UPLOAD_FOLDER =", UPLOAD_FOLDER)
+    print("filename =", filename)
+    print("filepath =", filepath)
+    print("exists =", os.path.exists(filepath))
 
     if not os.path.exists(filepath):
         raise HTTPException(
@@ -223,10 +227,7 @@ def process_existing(filename: str):
     return {
         "filename": filename,
         "total_chunks": len(chunks),
-        "chunks": [
-            asdict(chunk)
-            for chunk in chunks
-        ]
+        "chunks": [asdict(chunk) for chunk in chunks]
     }
 from pydantic import BaseModel
 
@@ -266,21 +267,10 @@ async def semantic_search(request: SearchRequest):
     return {
         "success": True,
         "results": formatted
-<<<<<<< HEAD
     }
 
-    # ==========================================================
-=======
-<<<<<<< HEAD
-    }
-=======
-    }
-
-
-# ==========================================================
->>>>>>> ab86b5c (Update project)
-# AI Copilot (RAG)
-# ==========================================================
+class RAGRequest(BaseModel):
+    query: str
 
 @app.post("/rag/ask")
 async def ask_question(request: RAGRequest):
@@ -299,9 +289,4 @@ async def ask_question(request: RAGRequest):
         raise HTTPException(
             status_code=500,
             detail=str(e)
-<<<<<<< HEAD
         )
-=======
-        )
->>>>>>> ff47bab (Add copilot and dashboard improvements)
->>>>>>> ab86b5c (Update project)

@@ -17,7 +17,7 @@ export default function SettingsPage({ user }) {
     <div className="max-w-[640px]">
       <Card className="mb-4">
         <SectionTitle icon={UserCog} title="Profile" />
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div>
             <label className="block text-[11.5px] font-semibold text-subtext mb-1.5 uppercase">Name</label>
             <input

@@ -5,13 +5,7 @@ import Badge from "../common/Badge";
 import SectionTitle from "../common/SectionTitle";
 import { cx } from "../../utils/classNames";
 
-const ALERTS = [
-  { t: "Pump P101 \u2013 bearing wear trending up", sev: "High", tone: "danger" },
-  { t: "Tank T-11 \u2013 pressure sensor recalibration due", sev: "Medium", tone: "warning" },
-  { t: "Compressor A-02 \u2013 scheduled service in 5 days", sev: "Low", tone: "success" },
-];
-
-export default function MaintenanceAlerts() {
+export default function MaintenanceAlerts({ alerts = [] }) {
   return (
     <Card  className="
     rounded-2xl
@@ -22,13 +16,13 @@ export default function MaintenanceAlerts() {
     hover:shadow-lg
     transition-all
   ">
-      <SectionTitle icon={AlertTriangle}  title={`Maintenance Alerts (${ALERTS.length})`} />
-      {ALERTS.map((alert, i) => (
+      <SectionTitle icon={AlertTriangle}  title={`Maintenance Alerts (${alerts.length})`} />
+      {alerts.map((alert, i) => (
         <div
   key={alert.t}
   className={cx(
     "group flex items-start justify-between rounded-xl border border-gray-200 bg-white p-4 transition-all duration-300 hover:border-indigo-300 hover:shadow-md",
-    i !== ALERTS.length - 1 && "mb-3"
+    i !== alerts.length - 1 && "mb-3"
   )}
 >
    

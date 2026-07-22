@@ -18,4 +18,8 @@ const complianceItemSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+complianceItemSchema.index({ status: 1 });
+complianceItemSchema.index({ risk: 1 });
+complianceItemSchema.index({ name: "text" });
+
 export default mongoose.model("ComplianceItem", complianceItemSchema);

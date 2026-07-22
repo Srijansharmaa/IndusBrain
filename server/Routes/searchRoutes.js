@@ -3,8 +3,11 @@ import { body } from "express-validator";
 
 import { semanticSearch } from "../controllers/searchController.js";
 import validate from "../middleware/validateMiddleware.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+router.use(protect);
 
 router.post(
     "/",

@@ -28,6 +28,18 @@ const documentSchema = new mongoose.Schema(
         default: {}
     },
 
+    status: {
+        type: String,
+        enum: ["processing", "completed", "failed"],
+        default: "processing",
+        index: true
+    },
+
+    statusMessage: {
+        type: String,
+        default: null
+    },
+
     uploadedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -41,5 +53,6 @@ const documentSchema = new mongoose.Schema(
 );
 
 documentSchema.index({ originalName: "text" });
+documentSchema.index({ createdAt: -1 });
 
 export default mongoose.model("Document", documentSchema);

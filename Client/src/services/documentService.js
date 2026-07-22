@@ -8,12 +8,27 @@ export const getDocuments = async () => {
   return res.data.documents;
 };
 
+export const getDocumentById = async (id) => {
+  const res = await api.get(`/documents/${id}`);
+  return res.data.document;
+};
+
+export const deleteDocument = async (id) => {
+  const res = await api.delete(`/documents/${id}`);
+  return res.data;
+};
+
+export const getExtension = (doc) => {
+  const match = /\.([a-z0-9]+)$/i.exec(doc.originalName || "");
+  return match ? match[1].toUpperCase() : "Other";
+};
+
 export const getDocumentCategories = async () => {
   const docs = await getDocuments();
 
   const categories = [
     "All",
-    ...new Set(docs.map((doc) => doc.cat || "General")),
+    ...new Set(docs.map(getExtension)),
   ];
 
   return categories;
@@ -31,6 +46,11 @@ export const uploadDocument = async (file) => {
 
   return res.data;
 };
+export const reprocessDocument = async (id) => {
+  const res = await api.post(`/documents/${id}/reprocess`);
+  return res.data;
+};
+
  export const semanticSearch = async (query) => {
 
     const response = await api.post("/search", {
