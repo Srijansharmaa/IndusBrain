@@ -8,6 +8,8 @@ import SuggestedQueries from "./SuggestedQueries";
 import ChatInput from "./ChatInput";
 
 export default function ChatWindow({ messages, streaming, streamedText, asking, onAsk, suggestedQueries, onSourceClick }) {
+  // Follow-up suggestion chips reuse the same "ask" flow as typing a query.
+  const onSuggestionClick = onAsk;
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -24,7 +26,7 @@ export default function ChatWindow({ messages, streaming, streamedText, asking, 
 
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3.5">
         {messages.map((message, i) => (
-          <ChatMessage key={i} {...message} onSourceClick={onSourceClick} />
+          <ChatMessage key={i} {...message} onSourceClick={onSourceClick} onSuggestionClick={onSuggestionClick} />
         ))}
         {asking && !streaming && <TypingIndicator />}
         {streaming && <StreamingMessage text={streamedText} />}

@@ -18,6 +18,7 @@ import copilotRoutes from "./Routes/copilotRoutes.js";
 import graphRoutes from "./Routes/graphRoutes.js";
 import maintenanceRoutes from "./Routes/maintenanceRoutes.js";
 import dashboardRoutes from "./Routes/dashboardRoutes.js";
+import aiRoutes from "./Routes/aiRoutes.js";
 import errorHandler, { notFound } from "./middleware/errorMiddleware.js";
 import { checkAiEngineHealth } from "./services/aiService.js";
 import logger from "./utils/logger.js";
@@ -92,6 +93,7 @@ app.use("/api/copilot", copilotRoutes);
 app.use("/api/graph", graphRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/ai", aiRoutes);
 
 // ---------- Error handling (must be last) ----------
 app.use(notFound);

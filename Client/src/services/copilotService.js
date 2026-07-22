@@ -12,5 +12,11 @@ export const getInitialMessage = async () => {
 
 export const askCopilot = async (query) => {
   const res = await api.post("/copilot/ask", { query });
-  return res.data.answer;
+  // Merge the top-level orchestrator fields (nextSuggestions, type) into
+  // the answer object so callers get one flat shape to render from.
+  return {
+    ...res.data.answer,
+    type: res.data.type,
+    nextSuggestions: res.data.nextSuggestions,
+  };
 };

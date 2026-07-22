@@ -1,9 +1,10 @@
 import React from "react";
-import { FileText, ShieldAlert, ShieldCheck } from "lucide-react";
+import { FileText, ShieldAlert, ShieldCheck, Sparkles } from "lucide-react";
 import Badge from "../common/Badge";
 
-export default function ChatMetadata({ meta, onSourceClick }) {
+export default function ChatMetadata({ meta, onSourceClick, onSuggestionClick }) {
   const hasSources = meta.sources?.length > 0;
+  const hasSuggestions = meta.nextSuggestions?.length > 0;
 
   return (
     <div className="mt-5 rounded-2xl border border-indigo-100 bg-gradient-to-br from-slate-50 to-indigo-50 p-4">
@@ -53,6 +54,28 @@ cursor-pointer px-3 py-2 text-xs shadow-sm"
                 <span className="font-medium text-slate-700">
                   {source}
                 </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Suggested follow-ups, from the AI Orchestrator's nextSuggestions */}
+      {hasSuggestions && (
+        <div className={hasSources ? "mt-4 border-t border-indigo-100 pt-3" : ""}>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-indigo-700">
+            Ask a follow-up
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {meta.nextSuggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                onClick={() => onSuggestionClick?.(suggestion)}
+                className="flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-2 text-xs font-medium text-violet-700 shadow-sm transition-all hover:border-violet-300 hover:bg-violet-50"
+              >
+                <Sparkles size={14} className="text-violet-600" />
+                {suggestion}
               </button>
             ))}
           </div>

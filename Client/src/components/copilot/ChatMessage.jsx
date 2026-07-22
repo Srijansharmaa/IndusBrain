@@ -3,7 +3,7 @@ import { Bot, User } from "lucide-react";
 import ChatMetadata from "./ChatMetadata";
 import { cx } from "../../utils/classNames";
 
-export default function ChatMessage({ role, text, meta, isError, onSourceClick }) {
+export default function ChatMessage({ role, text, meta, isError, onSourceClick, onSuggestionClick }) {
   const isUser = role === "user";
 
   return (
@@ -38,7 +38,7 @@ export default function ChatMessage({ role, text, meta, isError, onSourceClick }
 
         {meta && (
           <div className="mt-4 border-t border-gray-100 pt-3">
-            <ChatMetadata meta={meta} onSourceClick={onSourceClick} />
+            <ChatMetadata meta={meta} onSourceClick={onSourceClick} onSuggestionClick={onSuggestionClick} />
           </div>
         )}
       </div>

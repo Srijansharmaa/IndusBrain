@@ -19,6 +19,8 @@ import Equipment from "../models/Equipment.js";
 import RecommendedAction from "../models/RecommendedAction.js";
 import Incident from "../models/Incident.js";
 import User from "../models/User.js";
+import Document from "../models/Document.js";
+import WorkflowTask from "../models/WorkflowTask.js";
 
 const RESET = process.argv.includes("--reset");
 
@@ -229,6 +231,62 @@ const run = async () => {
         logger.info(`Seeded ${DEMO_USERS.length} demo User document(s).`);
     } else {
         logger.info(`Skipping User (already has ${userCount} documents). Pass --reset to overwrite.`);
+    }
+
+    // WorkflowTask references demo users, so it must run after they exist.
+    // Also opportunistically links to a real Document if any have been
+    // uploaded, but works fine with document: null on a fresh install.
+    const workflowTaskCount = await WorkflowTask.countDocuments();
+    if (workflowTaskCount === 0 || RESET) {
+        if (RESET) await WorkflowTask.deleteMany({});
+
+        const plantManager = await User.findOne({ role: "plant" });
+        const maintEngineer = await User.findOne({ role: "maint" });
+        const complianceOfficer = await User.findOne({ role: "compliance" });
+        const sampleDocument = await Document.findOne();
+
+        const WORKFLOW_TASKS = [
+            {
+                title: "Approve Pressure Vessel Certificate renewal – Tank T-11",
+                type: "approval",
+                status: "pending",
+                document: sampleDocument?._id || null,
+                assignedTo: plantManager?._id || null,
+                createdBy: complianceOfficer?._id || null,
+                notes: "Awaiting sign-off before the 02 Aug 2026 deadline.",
+            },
+            {
+                title: "Review updated SOP-0044 – Pump maintenance procedure",
+                type: "review",
+                status: "in_progress",
+                document: sampleDocument?._id || null,
+                assignedTo: maintEngineer?._id || null,
+                createdBy: plantManager?._id || null,
+                notes: "Checking against the latest bearing replacement guidance.",
+            },
+            {
+                title: "Inspection Report Q3-2026 revision",
+                type: "version",
+                status: "approved",
+                document: sampleDocument?._id || null,
+                assignedTo: complianceOfficer?._id || null,
+                createdBy: complianceOfficer?._id || null,
+                version: 2,
+            },
+            {
+                title: "Assign follow-up on Pump P101 bearing failure",
+                type: "task",
+                status: "pending",
+                assignedTo: maintEngineer?._id || null,
+                createdBy: plantManager?._id || null,
+                notes: "Coordinate with S. Verma on the replacement timeline.",
+            },
+        ];
+
+        await WorkflowTask.insertMany(WORKFLOW_TASKS);
+        logger.info(`Seeded ${WORKFLOW_TASKS.length} WorkflowTask document(s).`);
+    } else {
+        logger.info(`Skipping WorkflowTask (already has ${workflowTaskCount} documents). Pass --reset to overwrite.`);
     }
 
     logger.info("Seed complete.");
