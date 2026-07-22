@@ -254,3 +254,6 @@ Thumbs.db
 .vscode/
 .idea/
 data/knowledge_graph.json
+server/package-lock.json
+Client
+server
