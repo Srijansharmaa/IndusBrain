@@ -4,7 +4,7 @@ import Metric from "../models/Metric.js";
 import ActivityLog from "../models/ActivityLog.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
-import { roleLabel, plantLabel } from "../utils/labels.js";
+import { roleLabel, plantLabel, PLANT_LABELS } from "../utils/labels.js";
 import escapeRegex from "../utils/escapeRegex.js";
 
 const ALLOWED_USER_SORT_FIELDS = new Set(["name", "email", "role", "status", "createdAt"]);
@@ -94,6 +94,28 @@ export const getActivityLog = asyncHandler(async (req, res) => {
         success: true,
         activityLog: logs.map((l) => l.message),
     });
+});
+
+/**
+ * @route GET /api/admin/departments
+ * User counts per plant, including known plants with zero users (from the
+ * PLANT_LABELS catalog) so a new plant shows up in admin UI immediately,
+ * not just once someone's assigned to it.
+ */
+export const getDepartments = asyncHandler(async (req, res) => {
+    const counts = await User.aggregate([
+        { $match: { plant: { $ne: null } } },
+        { $group: { _id: "$plant", count: { $sum: 1 } } },
+    ]);
+    const countsById = Object.fromEntries(counts.map((c) => [c._id, c.count]));
+
+    const departments = Object.keys(PLANT_LABELS).map((id) => ({
+        id,
+        name: plantLabel(id),
+        userCount: countsById[id] || 0,
+    }));
+
+    res.json({ success: true, departments });
 });
 
 /**

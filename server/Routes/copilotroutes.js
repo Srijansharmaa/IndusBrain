@@ -17,7 +17,10 @@ router.get("/welcome-message", getInitialMessage);
 
 router.post(
     "/ask",
-    [body("query").trim().notEmpty().withMessage("A query is required")],
+    [
+        body("query").trim().notEmpty().withMessage("A query is required"),
+        body("sessionId").optional().isString(),
+    ],
     validate,
     askCopilot
 );

@@ -1,10 +1,11 @@
 import fs from "fs";
 import Document from "../models/Document.js";
-import { processDocument, reprocessDocument } from "../services/aiService.js";
+import { processDocument, reprocessDocument, askRag } from "../services/aiService.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import logger from "../utils/logger.js";
 import escapeRegex from "../utils/escapeRegex.js";
+import * as recommendationEngine from "../services/ai/recommendationEngine.js";
 
 /**
  * @route POST /api/documents/upload
@@ -196,5 +197,64 @@ export const deleteDocument = asyncHandler(async (req, res) => {
     res.json({
         success: true,
         message: "Document deleted successfully",
+    });
+});
+
+/**
+ * @route GET /api/documents/categories
+ * Distinct file types currently in the library - the closest real
+ * "category" concept the schema has (there's no separate category field
+ * to fabricate data for).
+ */
+export const getDocumentCategories = asyncHandler(async (req, res) => {
+    const categories = await Document.aggregate([
+        { $group: { _id: "$fileType", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+    ]);
+
+    res.json({
+        success: true,
+        categories: categories.map((c) => ({ fileType: c._id || "unknown", count: c.count })),
+    });
+});
+
+/**
+ * @route GET /api/documents/:id/related
+ * Metadata-only relatedness (same file type, most recent) via
+ * recommendationEngine - no embeddings, consistent with the rest of the
+ * Recommendation Engine.
+ */
+export const getRelatedDocuments = asyncHandler(async (req, res) => {
+    const document = await Document.findById(req.params.id);
+    if (!document) {
+        throw new ApiError(404, "Document not found");
+    }
+
+    const related = await recommendationEngine.getRelatedDocuments({ documentId: req.params.id });
+    res.json({ success: true, related });
+});
+
+/**
+ * @route GET /api/documents/:id/summary
+ * Delegates to the AI Engine's real RAG pipeline (askRag) for the actual
+ * summary text - this does not re-implement summarization in Express.
+ */
+export const getDocumentSummary = asyncHandler(async (req, res) => {
+    const document = await Document.findById(req.params.id);
+    if (!document) {
+        throw new ApiError(404, "Document not found");
+    }
+    if (document.status !== "completed") {
+        throw new ApiError(409, `Document is ${document.status}; a summary requires successful processing first.`);
+    }
+
+    const ragResult = await askRag(`Summarize the document "${document.originalName}".`);
+
+    res.json({
+        success: true,
+        summary: {
+            text: ragResult?.answer || "No summary could be generated for this document yet.",
+            sources: [...new Set((ragResult?.sources || []).map((s) => s.source).filter(Boolean))],
+        },
     });
 });

@@ -1,7 +1,11 @@
 import ComplianceItem from "../models/ComplianceItem.js";
 import Metric from "../models/Metric.js";
+import ActivityLog from "../models/ActivityLog.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import escapeRegex from "../utils/escapeRegex.js";
+import formatRelativeTime from "../utils/formatRelativeTime.js";
+import * as complianceEngine from "../services/ai/complianceEngine.js";
+import * as recommendationEngine from "../services/ai/recommendationEngine.js";
 
 const ALLOWED_COMPLIANCE_SORT_FIELDS = new Set(["name", "status", "risk", "createdAt"]);
 
@@ -94,4 +98,91 @@ export const generateComplianceReport = asyncHandler(async (req, res) => {
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send(csv);
+});
+
+/**
+ * @route GET /api/compliance/audit-timeline
+ * Compliance-scoped slice of ActivityLog (type: "compliance").
+ */
+export const getAuditTimeline = asyncHandler(async (req, res) => {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+
+    const logs = await ActivityLog.find({ type: "compliance" })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+
+    res.json({
+        success: true,
+        timeline: logs.map((l) => ({ message: l.message, time: formatRelativeTime(l.createdAt), at: l.createdAt })),
+    });
+});
+
+/**
+ * @route GET /api/compliance/pending-audits
+ * Items with status "Expiring" - due for renewal but not yet lapsed.
+ */
+export const getPendingAudits = asyncHandler(async (req, res) => {
+    const items = await ComplianceItem.find({ status: "Expiring" }).sort({ risk: -1, createdAt: -1 }).lean();
+    res.json({ success: true, pendingAudits: items });
+});
+
+/**
+ * @route GET /api/compliance/violations
+ * Items with status "Expired" - already lapsed, the actual violations.
+ */
+export const getViolations = asyncHandler(async (req, res) => {
+    const items = await ComplianceItem.find({ status: "Expired" }).sort({ risk: -1, createdAt: -1 }).lean();
+    res.json({ success: true, violations: items });
+});
+
+/**
+ * @route GET /api/compliance/risk-assessment
+ * Groups compliance items by risk level and by status, for a risk-matrix
+ * style view.
+ */
+export const getRiskAssessment = asyncHandler(async (req, res) => {
+    const items = await ComplianceItem.find().lean();
+
+    const byRisk = items.reduce((acc, i) => {
+        acc[i.risk] = (acc[i.risk] || 0) + 1;
+        return acc;
+    }, {});
+    const byStatus = items.reduce((acc, i) => {
+        acc[i.status] = (acc[i.status] || 0) + 1;
+        return acc;
+    }, {});
+    const highRiskItems = items.filter((i) => i.risk === "High");
+
+    res.json({
+        success: true,
+        riskAssessment: {
+            total: items.length,
+            byRisk,
+            byStatus,
+            highRiskItems: highRiskItems.map((i) => ({ name: i.name, status: i.status, exp: i.exp })),
+        },
+    });
+});
+
+/**
+ * @route GET /api/compliance/recommendations
+ * Query params: query (free text to match against). Reuses
+ * recommendationEngine's metadata-only matching (no embeddings) rather
+ * than duplicating the lookup logic here.
+ */
+export const getComplianceRecommendations = asyncHandler(async (req, res) => {
+    const query = req.query.query?.trim() || "";
+    const [complianceReferences, expiringItems] = await Promise.all([
+        recommendationEngine.getComplianceReferences(query),
+        complianceEngine.getExpiringItems(),
+    ]);
+
+    res.json({
+        success: true,
+        recommendations: {
+            references: complianceReferences,
+            prioritizedExpiring: expiringItems.slice(0, 5).map((i) => ({ name: i.name, status: i.status, exp: i.exp, risk: i.risk })),
+        },
+    });
 });

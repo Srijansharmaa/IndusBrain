@@ -5,6 +5,7 @@ import {
     getAdminUsers,
     getAdminMetrics,
     getActivityLog,
+    getDepartments,
     inviteUser,
     updateAdminUser,
     deleteAdminUser,
@@ -20,6 +21,7 @@ router.use(authorize("admin"));
 router.get("/users", getAdminUsers);
 router.get("/metrics", getAdminMetrics);
 router.get("/activity-log", getActivityLog);
+router.get("/departments", getDepartments);
 
 router.post(
     "/users/invite",

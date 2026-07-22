@@ -36,7 +36,7 @@ router.post(
         body("name").trim().notEmpty().withMessage("Name is required"),
         body("plant").trim().notEmpty().withMessage("Plant is required"),
         body("role")
-            .isIn(["maint", "plant", "safety", "compliance", "quality", "admin"])
+            .isIn(["maint", "plant", "safety", "compliance", "quality"])
             .withMessage("Invalid role"),
     ],
     validate,

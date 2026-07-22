@@ -15,4 +15,7 @@ const graphNodeSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+graphNodeSchema.index({ type: 1 });
+graphNodeSchema.index({ label: "text" });
+
 export default mongoose.model("GraphNode", graphNodeSchema);

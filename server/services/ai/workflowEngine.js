@@ -49,6 +49,75 @@ export const getPendingApprovals = async () => {
     return tasks.map((t) => ({ id: t._id, title: t.title, status: t.status, document: t.document?.originalName || null }));
 };
 
+export const getTaskById = async (taskId) => {
+    return WorkflowTask.findById(taskId).populate("document", "originalName").populate("assignedTo", "name role");
+};
+
+/**
+ * Generic field edit (title/notes/assignedTo/document) - distinct from
+ * updateTaskStatus, which is specifically the approve/reject/complete
+ * lifecycle transition and logs differently.
+ */
+export const updateTask = async (taskId, fields = {}) => {
+    const allowed = ["title", "notes", "assignedTo", "document"];
+    const task = await WorkflowTask.findById(taskId);
+    if (!task) return null;
+
+    for (const key of allowed) {
+        if (fields[key] !== undefined) task[key] = fields[key];
+    }
+    await task.save();
+    return task;
+};
+
+export const deleteTask = async (taskId, actorId) => {
+    const task = await WorkflowTask.findById(taskId);
+    if (!task) return null;
+
+    await task.deleteOne();
+    await ActivityLog.create({
+        message: `Workflow item deleted: ${task.title}`,
+        type: "general",
+        actor: actorId,
+    });
+    return task;
+};
+
+/**
+ * Tasks assigned to a specific user - "My Tasks" view.
+ */
+export const getAssignedTasks = async (userId, { status } = {}) => {
+    const filter = { assignedTo: userId };
+    if (status) filter.status = status;
+
+    const tasks = await WorkflowTask.find(filter).sort({ createdAt: -1 }).populate("document", "originalName");
+    return tasks.map((t) => ({
+        id: t._id,
+        title: t.title,
+        type: t.type,
+        status: t.status,
+        document: t.document?.originalName || null,
+        createdAt: t.createdAt,
+    }));
+};
+
+/**
+ * Counts by type/status for a Workflow dashboard header.
+ */
+export const getWorkflowStats = async () => {
+    const [byType, byStatus, total] = await Promise.all([
+        WorkflowTask.aggregate([{ $group: { _id: "$type", count: { $sum: 1 } } }]),
+        WorkflowTask.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+        WorkflowTask.countDocuments(),
+    ]);
+
+    return {
+        total,
+        byType: Object.fromEntries(byType.map((t) => [t._id, t.count])),
+        byStatus: Object.fromEntries(byStatus.map((s) => [s._id, s.count])),
+    };
+};
+
 export const getPendingReviews = async () => {
     const tasks = await WorkflowTask.find({ type: "review", status: { $in: ["pending", "in_progress"] } })
         .sort({ createdAt: -1 })
@@ -90,7 +159,12 @@ export const handleWorkflowQuery = async ({ query, user }) => {
 export default {
     createTask,
     listTasks,
+    getTaskById,
+    updateTask,
     updateTaskStatus,
+    deleteTask,
+    getAssignedTasks,
+    getWorkflowStats,
     getPendingApprovals,
     getPendingReviews,
     getVersionHistory,

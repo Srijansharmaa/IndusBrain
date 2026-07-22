@@ -71,7 +71,13 @@ export const login = asyncHandler(async (req, res) => {
  * `protect` without requiring a UI redesign.
  */
 export const session = asyncHandler(async (req, res) => {
-    const { name, plant, role } = req.body;
+    const { name, plant } = req.body;
+    // Defense in depth: the route validator already restricts this to
+    // non-admin roles, but the controller shouldn't rely solely on that -
+    // this is a passwordless, unauthenticated entry point, so it must never
+    // be able to mint an admin session even if the validator is loosened
+    // later. Mirrors the same guard in register().
+    const role = req.body.role === "admin" ? "maint" : req.body.role;
 
     const email = `${slugify(name)}@indusbrain.local`;
 

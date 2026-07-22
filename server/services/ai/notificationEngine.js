@@ -2,6 +2,8 @@ import Equipment from "../../models/Equipment.js";
 import ComplianceItem from "../../models/ComplianceItem.js";
 import WorkflowTask from "../../models/WorkflowTask.js";
 import Document from "../../models/Document.js";
+import Notification from "../../models/Notification.js";
+import Conversation from "../../models/Conversation.js";
 
 /**
  * Notification Engine
@@ -80,21 +82,107 @@ export const getWorkflowUpdateNotifications = async (limit = 5) => {
 };
 
 /**
+ * AI/Copilot notifications - currently just recent conversation activity
+ * surfaced as a single rollup notification (Conversation is the AI
+ * Orchestrator's memory store). Kept separate from
+ * getDocumentApprovalNotifications' "failed processing" entries, which
+ * are document-processing notifications, not Copilot-usage ones.
+ */
+export const getAiNotifications = async () => {
+    const since = new Date();
+    since.setHours(since.getHours() - 24);
+
+    const recentConversations = await Conversation.countDocuments({ lastActivityAt: { $gte: since } });
+    if (recentConversations === 0) return [];
+
+    return [
+        {
+            type: "ai_update",
+            severity: "low",
+            message: `${recentConversations} Copilot conversation(s) active in the last 24 hours.`,
+            refId: null,
+        },
+    ];
+};
+
+/**
  * @param {object} [user] - if provided, could be used to scope by plant/role in future; currently org-wide.
  */
 export const getNotifications = async () => {
-    const [maintenance, approvals, compliance, workflow] = await Promise.all([
+    const [maintenance, approvals, compliance, workflow, ai] = await Promise.all([
         getMaintenanceDueNotifications(),
         getDocumentApprovalNotifications(),
         getComplianceExpiryNotifications(),
         getWorkflowUpdateNotifications(),
+        getAiNotifications(),
     ]);
 
-    const all = [...maintenance, ...approvals, ...compliance, ...workflow];
+    const all = [...maintenance, ...approvals, ...compliance, ...workflow, ...ai];
     const severityRank = { high: 0, medium: 1, low: 2 };
     all.sort((a, b) => severityRank[a.severity] - severityRank[b.severity]);
 
     return all;
+};
+
+/**
+ * Upserts the current computed feed into the Notification collection so
+ * read/unread state persists across requests, without ever resetting a
+ * notification that's already been marked read back to unread. Dedupe key
+ * is `type:refId` - the same underlying condition (e.g. the same overdue
+ * equipment) re-detected on the next sync updates the existing row's
+ * message/severity rather than creating a duplicate.
+ */
+export const syncNotifications = async () => {
+    const computed = await getNotifications();
+
+    await Promise.all(
+        computed.map((n) => {
+            const dedupeKey = `${n.type}:${n.refId}`;
+            return Notification.findOneAndUpdate(
+                { dedupeKey },
+                {
+                    $set: { type: n.type, severity: n.severity, message: n.message, refId: n.refId },
+                    $setOnInsert: { dedupeKey, read: false },
+                },
+                { upsert: true, new: true }
+            );
+        })
+    );
+
+    return computed.length;
+};
+
+/**
+ * @param {string|null} [userId] - reserved for per-user scoping once
+ * notifications are targeted at specific recipients; currently all
+ * notifications are org-wide (recipient: null) so this returns the full feed.
+ */
+export const getRecentNotifications = async (userId, limit = 20) => {
+    await syncNotifications();
+
+    const notifications = await Notification.find().sort({ createdAt: -1 }).limit(limit);
+    return notifications;
+};
+
+export const getUnreadCount = async (userId) => {
+    await syncNotifications();
+    return Notification.countDocuments({ read: false });
+};
+
+export const markRead = async (notificationId) => {
+    return Notification.findByIdAndUpdate(
+        notificationId,
+        { read: true, readAt: new Date() },
+        { new: true }
+    );
+};
+
+export const markAllRead = async (userId) => {
+    const result = await Notification.updateMany(
+        { read: false },
+        { read: true, readAt: new Date() }
+    );
+    return result.modifiedCount;
 };
 
 export default {
@@ -102,5 +190,11 @@ export default {
     getDocumentApprovalNotifications,
     getComplianceExpiryNotifications,
     getWorkflowUpdateNotifications,
+    getAiNotifications,
     getNotifications,
+    syncNotifications,
+    getRecentNotifications,
+    getUnreadCount,
+    markRead,
+    markAllRead,
 };

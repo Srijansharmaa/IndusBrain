@@ -8,4 +8,7 @@ const graphEdgeSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+graphEdgeSchema.index({ from: 1 });
+graphEdgeSchema.index({ to: 1 });
+
 export default mongoose.model("GraphEdge", graphEdgeSchema);
