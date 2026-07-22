@@ -76,9 +76,12 @@ class GraphMerger:
 
             edge_keys.add(key)
 
+        merged_nodes = list(existing_nodes.values())
+        print(f"[KG DEBUG] GraphMerger.merge() -> nodes_merged={len(merged_nodes)}, edges_merged={len(merged_edges)}")
+
         return {
 
-            "nodes": list(existing_nodes.values()),
+            "nodes": merged_nodes,
 
             "edges": merged_edges
 

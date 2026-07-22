@@ -4,6 +4,7 @@ import ActivityLog from "../models/ActivityLog.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import escapeRegex from "../utils/escapeRegex.js";
 import formatRelativeTime from "../utils/formatRelativeTime.js";
+import { RISK_RANK_STAGE } from "../utils/riskRank.js";
 import * as complianceEngine from "../services/ai/complianceEngine.js";
 import * as recommendationEngine from "../services/ai/recommendationEngine.js";
 
@@ -39,12 +40,26 @@ export const getComplianceItems = asyncHandler(async (req, res) => {
         }
     }
 
-    let query = ComplianceItem.find(filter).sort({ [sortField]: sortDir });
-    if (limit) {
-        query = query.skip((page - 1) * limit).limit(limit);
+    let items;
+    if (sortField === "risk") {
+        // Risk is a string enum, so a plain sort on it is alphabetical
+        // ("High" < "Low" < "Medium"), not severity order. Rank it
+        // numerically instead so "High" always sorts as most severe.
+        const pipeline = [{ $match: filter }, RISK_RANK_STAGE, { $sort: { riskRank: sortDir } }];
+        if (limit) {
+            pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit });
+        }
+        pipeline.push({ $project: { riskRank: 0 } });
+        items = await ComplianceItem.aggregate(pipeline);
+    } else {
+        let query = ComplianceItem.find(filter).sort({ [sortField]: sortDir });
+        if (limit) {
+            query = query.skip((page - 1) * limit).limit(limit);
+        }
+        items = await query;
     }
 
-    const [items, total] = await Promise.all([query, ComplianceItem.countDocuments(filter)]);
+    const total = await ComplianceItem.countDocuments(filter);
 
     res.json({
         success: true,

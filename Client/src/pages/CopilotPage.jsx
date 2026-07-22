@@ -11,6 +11,11 @@ export default function CopilotPage({ graph, pendingQuery, onConsumePendingQuery
   const [suggestedQueries, setSuggestedQueries] = useState([]);
   const [heroPath, setHeroPath] = useState([]);
   const [asking, setAsking] = useState(false);
+  // Persists for the lifetime of the conversation. Captured from the
+  // backend's response (metadata.sessionId) and resent on every
+  // subsequent ask so the AI Orchestrator resolves follow-up questions
+  // against the same session instead of starting a new one each message.
+  const [sessionId, setSessionId] = useState(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -43,8 +48,11 @@ export default function CopilotPage({ graph, pendingQuery, onConsumePendingQuery
     setAsking(true);
 
     try {
-      const answer = await askCopilot(query);
+      const answer = await askCopilot(query, sessionId);
       lastMetaRef.current = answer;
+      if (answer.metadata?.sessionId) {
+        setSessionId(answer.metadata.sessionId);
+      }
       start(answer.text, heroPath);
     } catch (err) {
       const message =
@@ -66,6 +74,15 @@ export default function CopilotPage({ graph, pendingQuery, onConsumePendingQuery
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingQuery]);
 
+  // The only place a session is reset - explicit user action, not an
+  // implicit side effect of asking a question.
+  const handleNewChat = useCallback(() => {
+    setSessionId(null);
+    setMessages([]);
+    lastMetaRef.current = null;
+    getInitialMessage().then((msg) => setMessages([msg]));
+  }, []);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4" style={{ height: "calc(100vh - 120px)" }}>
       <ChatWindow
@@ -74,6 +91,7 @@ export default function CopilotPage({ graph, pendingQuery, onConsumePendingQuery
         streamedText={streamedText}
         asking={asking}
         onAsk={handleAsk}
+        onNewChat={handleNewChat}
         suggestedQueries={suggestedQueries}
         onSourceClick={onSearchDocuments}
       />

@@ -13,6 +13,12 @@ from ai_engine.embeddings.embedding_model import EmbeddingModel
 from ai_engine.vector_db.chroma_manager import ChromaManager
 from ai_engine.rag.rag_pipeline import RAGPipeline
 
+# Knowledge Graph imports
+from ai_engine.knowledge_graph.graph_store import GraphStore
+from ai_engine.knowledge_graph.graph_query import GraphQuery
+from ai_engine.knowledge_graph.graph_statistics import GraphStatistics
+from ai_engine.pipelines.knowledge_graph_pipeline import KnowledgeGraphPipeline
+
 
 pipeline = None
 chroma = None
@@ -135,6 +141,15 @@ async def process_document(file: UploadFile = File(...)):
         # Process document into chunks
         chunks = pipeline.process(filepath)
 
+        # Build/update knowledge graph from chunks BEFORE embedding/storage
+        try:
+            kg_pipeline = KnowledgeGraphPipeline()
+            merged_graph = kg_pipeline.process(chunks)
+            print(f"✅ Knowledge graph updated: nodes={len(merged_graph.get('nodes', []))} edges={len(merged_graph.get('edges', []))}")
+        except Exception as e:
+            # Log but don't fail the whole process - embedding and storage should continue
+            print(f"Knowledge graph pipeline error: {e}")
+
         # Generate embeddings
         texts = [chunk.text for chunk in chunks]
         embeddings = EmbeddingModel.encode(texts)
@@ -224,6 +239,14 @@ def process_existing(filename: str):
 
     chunks = pipeline.process(str(filepath))
 
+    # Update knowledge graph as well
+    try:
+        kg_pipeline = KnowledgeGraphPipeline()
+        merged_graph = kg_pipeline.process(chunks)
+        print(f"✅ Knowledge graph updated from existing file: nodes={len(merged_graph.get('nodes', []))} edges={len(merged_graph.get('edges', []))}")
+    except Exception as e:
+        print(f"Knowledge graph pipeline error (existing file): {e}")
+
     return {
         "filename": filename,
         "total_chunks": len(chunks),
@@ -290,3 +313,117 @@ async def ask_question(request: RAGRequest):
             status_code=500,
             detail=str(e)
         )
+
+# ==========================================================
+# Knowledge Graph Endpoints
+# ==========================================================
+
+@app.get("/knowledge-graph/nodes")
+def get_knowledge_nodes():
+    store = GraphStore()
+    graph = store.load()
+    try:
+        abs_path = str(store.file_path.resolve())
+    except Exception:
+        abs_path = "<unknown>"
+    print(f"[KG DEBUG] API GET /knowledge-graph/nodes -> GraphStore path: {abs_path}")
+    print(f"[KG DEBUG] API GET /knowledge-graph/nodes -> loaded nodes={len(graph.get('nodes', []))}, edges={len(graph.get('edges', []))}")
+    return {
+        "success": True,
+        "nodes": graph.get("nodes", [])
+    }
+
+
+@app.get("/knowledge-graph/edges")
+def get_knowledge_edges():
+    store = GraphStore()
+    graph = store.load()
+    return {
+        "success": True,
+        "edges": graph.get("edges", [])
+    }
+
+
+@app.get("/knowledge-graph/stats")
+def get_knowledge_stats():
+    store = GraphStore()
+    graph = store.load()
+    stats = GraphStatistics.generate(graph)
+    # documents indexed = number of uploaded files
+    try:
+        documents_indexed = len([f for f in UPLOAD_FOLDER.iterdir() if f.is_file()])
+    except Exception:
+        documents_indexed = 0
+    stats["documentsIndexed"] = documents_indexed
+    return {
+        "success": True,
+        "stats": stats
+    }
+
+
+@app.get("/knowledge-graph/node/{node_id}")
+def get_knowledge_node(node_id: str):
+    store = GraphStore()
+    graph = store.load()
+    node = None
+    for n in graph.get("nodes", []):
+        if n.get("id") == node_id:
+            node = n
+            break
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+    # find connected edges
+    connected_edges = [e for e in graph.get("edges", []) if e.get("source") == node_id or e.get("target") == node_id]
+    # find neighbor nodes
+    neighbor_ids = set()
+    for e in connected_edges:
+        neighbor_ids.add(e.get("source"))
+        neighbor_ids.add(e.get("target"))
+    neighbor_ids.discard(node_id)
+    neighbors = [n for n in graph.get("nodes", []) if n.get("id") in neighbor_ids]
+    return {
+        "success": True,
+        "node": node,
+        "edges": connected_edges,
+        "neighbors": neighbors
+    }
+
+
+@app.get("/knowledge-graph/search")
+def search_knowledge_graph(query: str):
+    gq = GraphQuery()
+    gq.reload()
+    matched = gq.search_entities(query)
+    return {
+        "success": True,
+        "matched": matched
+    }
+
+
+@app.post("/knowledge-graph/rebuild")
+def rebuild_knowledge_graph():
+    """
+    Rebuilds the knowledge graph by reprocessing all uploaded documents.
+    """
+    kg_pipeline = KnowledgeGraphPipeline()
+    all_chunks = []
+    # Iterate uploaded files and process
+    try:
+        files = [f for f in UPLOAD_FOLDER.iterdir() if f.is_file()]
+    except Exception:
+        files = []
+
+    for f in files:
+        try:
+            chunks = pipeline.process(str(f))
+            all_chunks.extend(chunks)
+        except Exception as e:
+            # skip files that fail processing but continue
+            print(f"Error processing {f}: {e}")
+
+    merged_graph = kg_pipeline.process(all_chunks)
+
+    return {
+        "success": True,
+        "graph": merged_graph
+    }

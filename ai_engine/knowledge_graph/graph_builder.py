@@ -167,14 +167,14 @@ class GraphBuilder:
 
             self._add_edge(relation)
 
+        nodes_list = list(self.nodes.values())
+        edges_list = self.edges
+        print(f"[KG DEBUG] GraphBuilder.build() -> nodes_built={len(nodes_list)}, edges_built={len(edges_list)}")
+
         return {
 
-            "nodes": list(
+            "nodes": nodes_list,
 
-                self.nodes.values()
-
-            ),
-
-            "edges": self.edges
+            "edges": edges_list
 
         }

@@ -131,9 +131,18 @@ export const getNotifications = async () => {
  * is `type:refId` - the same underlying condition (e.g. the same overdue
  * equipment) re-detected on the next sync updates the existing row's
  * message/severity rather than creating a duplicate.
+ *
+ * Anything previously persisted whose dedupeKey is NOT in the current
+ * computed feed means the underlying condition is no longer true (the
+ * approval was granted, the compliance item was renewed, the equipment
+ * dropped out of high risk) - those rows are marked resolved: true rather
+ * than deleted, so history and read/unread state survive. If a resolved
+ * condition becomes active again later, it's un-resolved (resolved:
+ * false) rather than creating a duplicate row.
  */
 export const syncNotifications = async () => {
     const computed = await getNotifications();
+    const currentKeys = computed.map((n) => `${n.type}:${n.refId}`);
 
     await Promise.all(
         computed.map((n) => {
@@ -141,12 +150,27 @@ export const syncNotifications = async () => {
             return Notification.findOneAndUpdate(
                 { dedupeKey },
                 {
-                    $set: { type: n.type, severity: n.severity, message: n.message, refId: n.refId },
+                    $set: {
+                        type: n.type,
+                        severity: n.severity,
+                        message: n.message,
+                        refId: n.refId,
+                        resolved: false,
+                        resolvedAt: null,
+                    },
                     $setOnInsert: { dedupeKey, read: false },
                 },
                 { upsert: true, new: true }
             );
         })
+    );
+
+    // Resolve anything that used to be active but isn't in the current
+    // computed feed anymore. Only touches rows that aren't already
+    // resolved, and never touches `read`/`readAt`.
+    await Notification.updateMany(
+        { dedupeKey: { $nin: currentKeys }, resolved: false },
+        { resolved: true, resolvedAt: new Date() }
     );
 
     return computed.length;
@@ -156,17 +180,19 @@ export const syncNotifications = async () => {
  * @param {string|null} [userId] - reserved for per-user scoping once
  * notifications are targeted at specific recipients; currently all
  * notifications are org-wide (recipient: null) so this returns the full feed.
+ * Only returns active (unresolved) notifications - a resolved one no
+ * longer belongs in "recent" since it's no longer true.
  */
 export const getRecentNotifications = async (userId, limit = 20) => {
     await syncNotifications();
 
-    const notifications = await Notification.find().sort({ createdAt: -1 }).limit(limit);
+    const notifications = await Notification.find({ resolved: false }).sort({ createdAt: -1 }).limit(limit);
     return notifications;
 };
 
 export const getUnreadCount = async (userId) => {
     await syncNotifications();
-    return Notification.countDocuments({ read: false });
+    return Notification.countDocuments({ read: false, resolved: false });
 };
 
 export const markRead = async (notificationId) => {

@@ -7,6 +7,11 @@ from ai_engine.llm.llm_interface import LLMInterface
 
 load_dotenv()
 
+import os
+
+print("GEMINI_API_KEY Loaded:", bool(os.getenv("GEMINI_API_KEY")))
+print("GEMINI_MODEL:", os.getenv("GEMINI_MODEL"))
+
 
 class GeminiLLM(LLMInterface):
     """

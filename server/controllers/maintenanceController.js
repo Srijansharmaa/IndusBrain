@@ -8,6 +8,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import escapeRegex from "../utils/escapeRegex.js";
 import formatRelativeTime from "../utils/formatRelativeTime.js";
+import { RISK_RANK_STAGE } from "../utils/riskRank.js";
 
 const DEFAULT_LIMIT = 100;
 const ALLOWED_RISKS = new Set(["Low", "Medium", "High"]);
@@ -29,11 +30,14 @@ export const getEquipmentHealth = asyncHandler(async (req, res) => {
     if (risk && ALLOWED_RISKS.has(risk)) filter.risk = risk;
 
     const [equipment, total] = await Promise.all([
-        Equipment.find(filter)
-            .sort({ risk: -1, failure: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean(),
+        Equipment.aggregate([
+            { $match: filter },
+            RISK_RANK_STAGE,
+            { $sort: { riskRank: -1, failure: -1 } },
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            { $project: { riskRank: 0 } },
+        ]),
         Equipment.countDocuments(filter),
     ]);
 

@@ -78,6 +78,8 @@ class KnowledgeGraphPipeline:
 
     def process(self, chunks):
 
+        print(f"[KG DEBUG] Entering KnowledgeGraphPipeline.process() with chunks_count={len(chunks)}")
+
         all_entities = []
 
         all_relationships = []
@@ -136,6 +138,10 @@ class KnowledgeGraphPipeline:
 
        
 
+        print(f"[KG DEBUG] Total entities collected before build: {len(all_entities)}")
+
+        print(f"[KG DEBUG] Total relationships collected before build: {len(all_relationships)}")
+
         new_graph = self.builder.build(
 
             all_entities,
@@ -144,7 +150,11 @@ class KnowledgeGraphPipeline:
 
         )
 
-        
+        # Debug: new graph counts
+        ng_nodes = len(new_graph.get('nodes', []))
+        ng_edges = len(new_graph.get('edges', []))
+        print(f"[KG DEBUG] KnowledgeGraphPipeline.process() -> new_graph nodes={ng_nodes}, edges={ng_edges}")
+
         existing_graph = self.store.load()
 
         
@@ -205,6 +215,11 @@ class KnowledgeGraphPipeline:
 
         )
 
+        # Log counts from this extraction
+        ent_count = len(result.get("entities", []))
+        rel_count = len(result.get("relationships", []))
+        print(f"[KG DEBUG] _process_batch: extracted entities={ent_count}, relationships={rel_count}")
+
         entities.extend(
 
             result.get(
@@ -228,3 +243,5 @@ class KnowledgeGraphPipeline:
             )
 
         )
+
+        print(f"[KG DEBUG] Totals after _process_batch: entities={len(entities)}, relationships={len(relationships)}")

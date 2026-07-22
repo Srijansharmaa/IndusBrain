@@ -132,16 +132,32 @@ RETURN ONLY JSON
 
         response = self.llm.generate(prompt)
 
+        # Print complete raw LLM response (unmodified)
+        print("[KG DEBUG] KnowledgeExtractor.extract() -> raw LLM response START")
+        try:
+            print(response)
+        except Exception as e:
+            # In case printing the raw response causes issues, still show that there's a value
+            print(f"[KG DEBUG] Unable to directly print raw response: {e}")
+        print("[KG DEBUG] KnowledgeExtractor.extract() -> raw LLM response END")
+
         try:
 
+            # Clean common markdown fences but keep original raw response printed above
             response = response.replace(
+
                 "```json",
+
                 ""
+
             )
 
             response = response.replace(
+
                 "```",
+
                 ""
+
             ).strip()
 
             data = json.loads(response)
@@ -158,6 +174,11 @@ RETURN ONLY JSON
 
                 data["relationships"] = []
 
+            # Debugging: print counts
+            ent_count = len(data.get("entities", []))
+            rel_count = len(data.get("relationships", []))
+            print(f"[KG DEBUG] KnowledgeExtractor.extract() -> entities={ent_count}, relationships={rel_count}")
+
             return data
 
         except Exception as e:
@@ -169,6 +190,16 @@ RETURN ONLY JSON
             print(e)
 
             print()
+
+            # Print the entire raw response again (unmodified) for debugging
+            print("[KG DEBUG] KnowledgeExtractor.extract() -> JSON parse failed. Full raw LLM response:")
+            try:
+                print(response)
+            except Exception as pe:
+                print(f"[KG DEBUG] Unable to print raw response in exception handler: {pe}")
+
+            # Debugging: show zero results
+            print(f"[KG DEBUG] KnowledgeExtractor.extract() -> entities=0, relationships=0 (due to error)")
 
             return {
 
