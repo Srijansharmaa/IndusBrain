@@ -47,54 +47,28 @@ export const getInitialMessage = asyncHandler(async (req, res) => {
     });
 });
 
-export const askCopilot = asyncHandler(async (req, res) => {
-    const { query } = req.body;
+export const askCopilot = async (query, sessionId) => {
+  try {
+    console.log("Sending:", { query, sessionId });
 
-    const ragResult = await askRAG(query);
-    const results = ragResult?.results || [];
-
-    if (results.length === 0) {
-        res.json({
-
-    success: true,
-
-    answer: {
-
-        text: ragResult.answer,
-
-        confidence: ragResult.confidence,
-
-        sources: ragResult.sources,
-
-        actions: ragResult.recommended_actions,
-
-        entities: ragResult.entities
-
-    }
-
-});
-    }
-
-    const text = results
-        .slice(0, 3)
-        .map((r) => r.text)
-        .join("\n\n");
-
-    const sources = [
-        ...new Set(
-            results.map((r) => r.metadata?.filename || r.metadata?.source || r.id)
-        ),
-    ];
-
-    const confidence = Math.round(results[0].score);
-
-    res.json({
-        success: true,
-        answer: {
-            text,
-            confidence,
-            sources,
-            actions: [],
-        },
+    const res = await api.post("/copilot/ask", {
+      query,
+      sessionId,
     });
-});
+
+    console.log("Response:", res.data);
+
+    return {
+      ...res.data.answer,
+      type: res.data.type,
+      nextSuggestions: res.data.nextSuggestions,
+      metadata: res.data.metadata,
+    };
+  } catch (err) {
+    console.error("========== COPILOT ERROR ==========");
+    console.error("Status:", err.response?.status);
+    console.error("Data:", err.response?.data);
+    console.error("Message:", err.message);
+    throw err;
+  }
+};

@@ -19,7 +19,7 @@ router.post(
     "/ask",
     [
         body("query").trim().notEmpty().withMessage("A query is required"),
-        body("sessionId").optional().isString(),
+        body("sessionId").optional({ nullable: true }).isUUID().withMessage("Invalid session ID format"),
     ],
     validate,
     askCopilot

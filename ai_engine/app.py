@@ -295,11 +295,11 @@ async def semantic_search(request: SearchRequest):
 class RAGRequest(BaseModel):
     query: str
 
+import traceback
+
 @app.post("/rag/ask")
 async def ask_question(request: RAGRequest):
-
     try:
-
         result = rag_pipeline.ask(request.query)
 
         return {
@@ -308,6 +308,7 @@ async def ask_question(request: RAGRequest):
         }
 
     except Exception as e:
+        traceback.print_exc()
 
         raise HTTPException(
             status_code=500,
