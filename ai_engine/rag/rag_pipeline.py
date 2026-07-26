@@ -2,7 +2,7 @@ from ai_engine.retrieval.retriever import Retriever
 from ai_engine.knowledge_graph.graph_query import GraphQuery
 from ai_engine.context.context_manager import ContextManager
 from ai_engine.rag.prompt_builder import PromptBuilder
-from ai_engine.llm.gemini_llm import GeminiLLM
+from ai_engine.llm.groq_llm import GroqLLM
 from ai_engine.rag.answer_formatter import AnswerFormatter
 from ai_engine.rag.confidence_estimator import ConfidenceEstimator
 
@@ -28,7 +28,7 @@ class RAGPipeline:
         Prompt Builder
               │
               ▼
-            Gemini
+            Groq
               │
               ▼
       Confidence Estimator
@@ -48,7 +48,7 @@ class RAGPipeline:
 
         self.context_manager = ContextManager()
 
-        self.llm = GeminiLLM()
+        self.llm = GroqLLM()
 
         self.answer_formatter = AnswerFormatter()
 

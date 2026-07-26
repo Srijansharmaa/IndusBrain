@@ -14,8 +14,11 @@ export default function MaintenancePage({ graph }) {
   useEffect(() => {
     getEquipmentHealth().then(setEquipmentHealth);
     getRecommendedActions().then(setActions);
-    getRecentIncidents().then(setIncidents);
-    getHeroPath().then(setHeroPath);
+getRecentIncidents().then((data) => {
+  console.log("INCIDENTS FROM API:", data);
+  setIncidents(data);
+});
+    getHeroPath().then(setHeroPath).catch(() => {});
   }, []);
 
   const onSelectEquipment = () => {

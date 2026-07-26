@@ -1,9 +1,9 @@
 from pathlib import Path
+
 from dataclasses import asdict
 import shutil
 import os
-
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -18,15 +18,16 @@ from ai_engine.knowledge_graph.graph_store import GraphStore
 from ai_engine.knowledge_graph.graph_query import GraphQuery
 from ai_engine.knowledge_graph.graph_statistics import GraphStatistics
 from ai_engine.pipelines.knowledge_graph_pipeline import KnowledgeGraphPipeline
-
+from ai_engine.services.industrial_intelligence import IndustrialIntelligenceService
 
 pipeline = None
 chroma = None
 rag_pipeline = None
+industrial_service = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global pipeline, chroma, rag_pipeline
+    global pipeline, chroma, rag_pipeline, industrial_service
 
     print(" Starting IndusBrain...")
 
@@ -37,6 +38,8 @@ async def lifespan(app: FastAPI):
     print("Loading embedding model...")
     EmbeddingModel.get_model()
     print("Embedding model loaded.")
+
+    industrial_service = IndustrialIntelligenceService()
 
     rag_pipeline = RAGPipeline()
 
@@ -117,13 +120,44 @@ def supported_files():
 # ==========================================================
 # Process Document
 # ==========================================================
+def process_document_background(filepath):
+    try:
+        print(f"🚀 Background processing started: {filepath}")
+
+        chunks = pipeline.process(filepath)
+
+        industrial_service.extract(chunks)
+
+        kg_pipeline = KnowledgeGraphPipeline()
+        merged_graph = kg_pipeline.process(chunks)
+
+        print(
+            f"✅ Knowledge graph updated: "
+            f"nodes={len(merged_graph.get('nodes', []))} "
+            f"edges={len(merged_graph.get('edges', []))}"
+        )
+
+        texts = [chunk.text for chunk in chunks]
+        embeddings = EmbeddingModel.encode(texts)
+
+        for chunk, embedding in zip(chunks, embeddings):
+            chunk.embedding = embedding.tolist()
+
+        chroma.add_chunks(chunks)
+
+        print(f"✅ Stored {len(chunks)} chunks")
+        print(f"📦 Chroma count: {chroma.count()}")
+
+        print("🎉 Background processing completed.")
+
+    except Exception as e:
+        print("❌ Background processing failed:", e)
 
 @app.post("/process-document")
-async def process_document(file: UploadFile = File(...)):
-    """
-    Upload a PDF and receive processed chunks.
-    """
-
+async def process_document(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
     extension = Path(file.filename).suffix.lower()
 
     if extension not in SUPPORTED_FILES:
@@ -137,48 +171,18 @@ async def process_document(file: UploadFile = File(...)):
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    try:
-        # Process document into chunks
-        chunks = pipeline.process(filepath)
+    background_tasks.add_task(
+        process_document_background,
+        str(filepath)
+    )
 
-        # Build/update knowledge graph from chunks BEFORE embedding/storage
-        try:
-            kg_pipeline = KnowledgeGraphPipeline()
-            merged_graph = kg_pipeline.process(chunks)
-            print(f"✅ Knowledge graph updated: nodes={len(merged_graph.get('nodes', []))} edges={len(merged_graph.get('edges', []))}")
-        except Exception as e:
-            # Log but don't fail the whole process - embedding and storage should continue
-            print(f"Knowledge graph pipeline error: {e}")
+    return {
+        "success": True,
+        "filename": file.filename,
+        "message": "Document uploaded successfully. AI processing started in the background."
+    }
 
-        # Generate embeddings
-        texts = [chunk.text for chunk in chunks]
-        embeddings = EmbeddingModel.encode(texts)
-
-        # Attach embeddings to chunks
-        for chunk, embedding in zip(chunks, embeddings):
-            chunk.embedding = embedding.tolist()
-
-        # Store in ChromaDB
-        chroma.add_chunks(chunks)
-
-        print(f"✅ Stored {len(chunks)} chunks")
-        print(f"📦 Chroma count: {chroma.count()}")
-
-        return {
-            "success": True,
-            "filename": file.filename,
-            "total_chunks": len(chunks),
-            "chunks": [
-                asdict(chunk)
-                for chunk in chunks
-            ]
-        }
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+   
 
 # ==========================================================
 # Delete Uploaded File

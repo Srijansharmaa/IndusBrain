@@ -1,7 +1,7 @@
 import express from "express";
 import { param } from "express-validator";
 
-import upload from "../middleware/uploadMiddleware.js";
+import upload from "../middleware/uploadmiddleware.js";
 import validate from "../middleware/validateMiddleware.js";
 import { protect } from "../middleware/authMiddleware.js";
 

@@ -1,6 +1,6 @@
-import ComplianceItem from "../models/ComplianceItem.js";
-import Metric from "../models/Metric.js";
-import ActivityLog from "../models/ActivityLog.js";
+import {
+    getKnowledgeGraphNodes
+} from "../services/aiService.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import escapeRegex from "../utils/escapeRegex.js";
 import formatRelativeTime from "../utils/formatRelativeTime.js";
@@ -16,63 +16,52 @@ const ALLOWED_COMPLIANCE_SORT_FIELDS = new Set(["name", "status", "risk", "creat
  * search (name), status, risk, sort (field, prefix "-" for descending).
  */
 export const getComplianceItems = asyncHandler(async (req, res) => {
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.min(parseInt(req.query.limit, 10) || 0, 100);
-    const search = req.query.search?.trim();
-    const { status, risk } = req.query;
 
-    const filter = {};
-    if (search) filter.name = { $regex: escapeRegex(search), $options: "i" };
-    const ALLOWED_STATUSES = new Set(["Valid", "Expiring", "Expired"]);
-    const ALLOWED_RISKS = new Set(["Low", "Medium", "High"]);
-    if (status && ALLOWED_STATUSES.has(status)) filter.status = status;
-    if (risk && ALLOWED_RISKS.has(risk)) filter.risk = risk;
+    const { nodes = [] } = await getKnowledgeGraphNodes();
 
-    let sortField = "createdAt";
-    let sortDir = -1;
-    if (req.query.sort) {
-        const raw = String(req.query.sort);
-        const desc = raw.startsWith("-");
-        const field = desc ? raw.slice(1) : raw;
-        if (ALLOWED_COMPLIANCE_SORT_FIELDS.has(field)) {
-            sortField = field;
-            sortDir = desc ? -1 : 1;
-        }
-    }
+    const items = nodes
+        .filter(node => node.properties)
+        .map(node => {
 
-    let items;
-    if (sortField === "risk") {
-        // Risk is a string enum, so a plain sort on it is alphabetical
-        // ("High" < "Low" < "Medium"), not severity order. Rank it
-        // numerically instead so "High" always sorts as most severe.
-        const pipeline = [{ $match: filter }, RISK_RANK_STAGE, { $sort: { riskRank: sortDir } }];
-        if (limit) {
-            pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit });
-        }
-        pipeline.push({ $project: { riskRank: 0 } });
-        items = await ComplianceItem.aggregate(pipeline);
-    } else {
-        let query = ComplianceItem.find(filter).sort({ [sortField]: sortDir });
-        if (limit) {
-            query = query.skip((page - 1) * limit).limit(limit);
-        }
-        items = await query;
-    }
+            let status = "Valid";
 
-    const total = await ComplianceItem.countDocuments(filter);
+            if (node.properties.health < 80)
+                status = "Expired";
+            else if (node.properties.health < 90)
+                status = "Expiring";
+
+            return {
+
+                id: node.id,
+
+                name: node.label,
+
+                status,
+
+                risk: node.properties.risk,
+
+                exp:
+                    node.properties.lastInspection ??
+                    "Unknown"
+
+            };
+
+        });
 
     res.json({
-        success: true,
-        items,
-        pagination: limit
-            ? { page, limit, total, pages: Math.ceil(total / limit) }
-            : { total },
-    });
-});
 
-export const getComplianceMetrics = asyncHandler(async (req, res) => {
-    const metrics = await Metric.find({ domain: "compliance" }).sort({ order: 1 });
-    res.json({ success: true, metrics });
+        success: true,
+
+        items,
+
+        pagination: {
+
+            total: items.length
+
+        }
+
+    });
+
 });
 
 /**
@@ -114,32 +103,132 @@ export const generateComplianceReport = asyncHandler(async (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send(csv);
 });
+export const getComplianceMetrics = asyncHandler(async (req, res) => {
 
+    const { nodes = [] } = await getKnowledgeGraphNodes();
+
+    const equipment = nodes.filter(node => node.properties);
+
+    const total = equipment.length;
+
+    const valid = equipment.filter(
+        node => node.properties.health >= 90
+    ).length;
+
+    const expiring = equipment.filter(
+        node =>
+            node.properties.health >= 80 &&
+            node.properties.health < 90
+    ).length;
+
+    const expired = equipment.filter(
+        node => node.properties.health < 80
+    ).length;
+
+    const score =
+        total === 0
+            ? 0
+            : Math.round((valid / total) * 100);
+
+    res.json({
+        success: true,
+        metrics: [
+            {
+                label: "Compliance Score",
+                value: `${score}%`,
+                icon: "ShieldCheck",
+                color: "primary"
+            },
+            {
+                label: "Valid",
+                value: valid,
+                icon: "FileCheck2",
+                color: "success"
+            },
+            {
+                label: "Expiring",
+                value: expiring,
+                icon: "Clock",
+                color: "warning"
+            },
+            {
+                label: "Expired",
+                value: expired,
+                icon: "AlertTriangle",
+                color: "danger"
+            }
+        ]
+    });
+
+});
 /**
  * @route GET /api/compliance/audit-timeline
  * Compliance-scoped slice of ActivityLog (type: "compliance").
  */
 export const getAuditTimeline = asyncHandler(async (req, res) => {
-    const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
 
-    const logs = await ActivityLog.find({ type: "compliance" })
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .lean();
+    const { nodes = [] } = await getKnowledgeGraphNodes();
+
+    const timeline = nodes
+        .filter(node => node.properties)
+        .sort((a, b) =>
+            new Date(b.properties.lastInspection || 0) -
+            new Date(a.properties.lastInspection || 0)
+        )
+        .slice(0, 10)
+        .map(node => ({
+
+            message:
+                `${node.label} inspected - ${node.properties.maintenanceStatus}`,
+
+            time: formatRelativeTime(
+                node.properties.lastInspection || new Date()
+            ),
+
+            at: node.properties.lastInspection || new Date()
+
+        }));
 
     res.json({
         success: true,
-        timeline: logs.map((l) => ({ message: l.message, time: formatRelativeTime(l.createdAt), at: l.createdAt })),
+        timeline
     });
-});
 
+});
 /**
  * @route GET /api/compliance/pending-audits
  * Items with status "Expiring" - due for renewal but not yet lapsed.
  */
 export const getPendingAudits = asyncHandler(async (req, res) => {
-    const items = await ComplianceItem.find({ status: "Expiring" }).sort({ risk: -1, createdAt: -1 }).lean();
-    res.json({ success: true, pendingAudits: items });
+
+    const { nodes = [] } =
+        await getKnowledgeGraphNodes();
+
+    const pendingAudits = nodes
+        .filter(
+            n =>
+                n.properties &&
+                n.properties.health >= 80 &&
+                n.properties.health < 90
+        )
+        .map(n => ({
+
+            name: n.label,
+
+            risk: n.properties.risk,
+
+            exp: n.properties.lastInspection
+
+        }));
+
+    res.json({
+
+        success: true,
+
+        pendingAudits
+
+    });
+
 });
 
 /**
@@ -147,8 +236,36 @@ export const getPendingAudits = asyncHandler(async (req, res) => {
  * Items with status "Expired" - already lapsed, the actual violations.
  */
 export const getViolations = asyncHandler(async (req, res) => {
-    const items = await ComplianceItem.find({ status: "Expired" }).sort({ risk: -1, createdAt: -1 }).lean();
-    res.json({ success: true, violations: items });
+
+    const { nodes = [] } =
+        await getKnowledgeGraphNodes();
+
+    const violations = nodes
+        .filter(
+            n =>
+                n.properties &&
+                n.properties.health < 80
+        )
+        .map(n => ({
+
+            name: n.label,
+
+            risk: n.properties.risk,
+
+            status: "Expired",
+
+            exp: n.properties.lastInspection
+
+        }));
+
+    res.json({
+
+        success: true,
+
+        violations
+
+    });
+
 });
 
 /**
@@ -157,27 +274,63 @@ export const getViolations = asyncHandler(async (req, res) => {
  * style view.
  */
 export const getRiskAssessment = asyncHandler(async (req, res) => {
-    const items = await ComplianceItem.find().lean();
 
-    const byRisk = items.reduce((acc, i) => {
-        acc[i.risk] = (acc[i.risk] || 0) + 1;
-        return acc;
-    }, {});
-    const byStatus = items.reduce((acc, i) => {
-        acc[i.status] = (acc[i.status] || 0) + 1;
-        return acc;
-    }, {});
-    const highRiskItems = items.filter((i) => i.risk === "High");
+    const { nodes = [] } = await getKnowledgeGraphNodes();
+
+    const equipment = nodes.filter(node => node.properties);
+
+    const byRisk = {
+        High: 0,
+        Medium: 0,
+        Low: 0
+    };
+
+    const byStatus = {
+        Valid: 0,
+        Expiring: 0,
+        Expired: 0
+    };
+
+    equipment.forEach(node => {
+
+        const risk = node.properties.risk || "Low";
+
+        if (byRisk[risk] !== undefined) {
+            byRisk[risk]++;
+        }
+
+        if (node.properties.health >= 90)
+            byStatus.Valid++;
+        else if (node.properties.health >= 80)
+            byStatus.Expiring++;
+        else
+            byStatus.Expired++;
+
+    });
+
+    const highRiskItems = equipment
+        .filter(node => node.properties.risk === "High")
+        .map(node => ({
+            name: node.label,
+            status:
+                node.properties.health >= 90
+                    ? "Valid"
+                    : node.properties.health >= 80
+                    ? "Expiring"
+                    : "Expired",
+            exp: node.properties.lastInspection || "Unknown"
+        }));
 
     res.json({
         success: true,
         riskAssessment: {
-            total: items.length,
+            total: equipment.length,
             byRisk,
             byStatus,
-            highRiskItems: highRiskItems.map((i) => ({ name: i.name, status: i.status, exp: i.exp })),
-        },
+            highRiskItems
+        }
     });
+
 });
 
 /**
@@ -187,17 +340,44 @@ export const getRiskAssessment = asyncHandler(async (req, res) => {
  * than duplicating the lookup logic here.
  */
 export const getComplianceRecommendations = asyncHandler(async (req, res) => {
-    const query = req.query.query?.trim() || "";
-    const [complianceReferences, expiringItems] = await Promise.all([
-        recommendationEngine.getComplianceReferences(query),
-        complianceEngine.getExpiringItems(),
-    ]);
+
+    const { nodes = [] } = await getKnowledgeGraphNodes();
+
+    const recommendations = nodes
+        .filter(node => node.properties)
+        .filter(node =>
+            node.properties.health < 90 ||
+            node.properties.risk === "High"
+        )
+        .sort((a, b) =>
+            a.properties.health - b.properties.health
+        )
+        .slice(0, 5)
+        .map(node => ({
+
+            equipment: node.label,
+
+            recommendation:
+                node.properties.health < 80
+                    ? "Immediate inspection and corrective maintenance required."
+                    : node.properties.risk === "High"
+                    ? "Schedule preventive maintenance and safety audit."
+                    : "Monitor equipment and perform routine inspection.",
+
+            risk: node.properties.risk,
+
+            health: node.properties.health,
+
+            failureProbability: node.properties.failureProbability
+
+        }));
 
     res.json({
+
         success: true,
-        recommendations: {
-            references: complianceReferences,
-            prioritizedExpiring: expiringItems.slice(0, 5).map((i) => ({ name: i.name, status: i.status, exp: i.exp, risk: i.risk })),
-        },
+
+        recommendations
+
     });
+
 });

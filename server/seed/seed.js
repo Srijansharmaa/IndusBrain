@@ -13,8 +13,6 @@ import KnowledgeHealth from "../models/KnowledgeHealth.js";
 import ComplianceItem from "../models/ComplianceItem.js";
 import SuggestedQuery from "../models/SuggestedQuery.js";
 import Config from "../models/Config.js";
-import GraphNode from "../models/GraphNode.js";
-import GraphEdge from "../models/GraphEdge.js";
 import Equipment from "../models/Equipment.js";
 import RecommendedAction from "../models/RecommendedAction.js";
 import Incident from "../models/Incident.js";
@@ -113,31 +111,6 @@ const INITIAL_COPILOT_MESSAGE = {
     text: "Hi, I'm your Knowledge Copilot. Ask me anything about equipment, incidents, compliance or documents across your plant.",
 };
 
-const GRAPH_NODES = [
-    { nodeId: "p101", type: "equipment", label: "Pump P101", x: 360, y: 70 },
-    { nodeId: "b204", type: "equipment", label: "Bearing B-204", x: 220, y: 150 },
-    { nodeId: "m12", type: "equipment", label: "Motor M-12", x: 500, y: 150 },
-    { nodeId: "inc2291", type: "incident", label: "Incident INC-2291", x: 360, y: 230 },
-    { nodeId: "mr0091", type: "document", label: "Maint. Report MR-0091", x: 220, y: 310 },
-    { nodeId: "rec114", type: "recommendation", label: "Recommendation REC-114", x: 500, y: 310 },
-    { nodeId: "sk_verma", type: "person", label: "S. Verma – Eng.", x: 70, y: 230 },
-    { nodeId: "compA02", type: "equipment", label: "Compressor A-02", x: 650, y: 70 },
-    { nodeId: "tnk11", type: "equipment", label: "Tank T-11", x: 640, y: 230 },
-    { nodeId: "sop0044", type: "document", label: "SOP-0044", x: 500, y: 60 },
-    { nodeId: "insp_q3", type: "document", label: "Inspection Q3-2026", x: 100, y: 70 },
-    { nodeId: "r_iyer", type: "person", label: "R. Iyer – Safety", x: 640, y: 320 },
-    { nodeId: "inc1188", type: "incident", label: "Incident INC-1188", x: 780, y: 150 },
-];
-
-const GRAPH_EDGES = [
-    ["p101", "b204"], ["p101", "m12"], ["b204", "inc2291"], ["m12", "inc2291"],
-    ["inc2291", "mr0091"], ["inc2291", "rec114"], ["mr0091", "sk_verma"],
-    ["p101", "sop0044"], ["compA02", "m12"], ["m12", "tnk11"], ["tnk11", "inc1188"],
-    ["inc1188", "r_iyer"], ["insp_q3", "b204"],
-].map(([from, to]) => ({ from, to }));
-
-const HERO_PATH = ["p101", "b204", "m12", "inc2291", "mr0091", "rec114"];
-
 const EQUIPMENT_HEALTH = [
     { name: "Pump P101", health: 62, risk: "High", failure: 34, temp: [61, 63, 66, 68, 71, 74, 77] },
     { name: "Motor M-12", health: 71, risk: "Medium", failure: 21, temp: [58, 59, 60, 62, 63, 64, 66] },
@@ -173,8 +146,6 @@ const collections = [
     { model: KnowledgeHealth, data: RADAR_DATA },
     { model: ComplianceItem, data: COMPLIANCE_ITEMS },
     { model: SuggestedQuery, data: SAMPLE_QUERIES.map((text, order) => ({ text, order })) },
-    { model: GraphNode, data: GRAPH_NODES },
-    { model: GraphEdge, data: GRAPH_EDGES },
     { model: Equipment, data: EQUIPMENT_HEALTH },
     { model: RecommendedAction, data: RECOMMENDED_ACTIONS },
     { model: Incident, data: RECENT_INCIDENTS },
@@ -198,12 +169,6 @@ const run = async () => {
         await model.insertMany(data);
         logger.info(`Seeded ${data.length} ${model.modelName} document(s).`);
     }
-
-    await Config.findOneAndUpdate(
-        { key: "graph.heroPath" },
-        { key: "graph.heroPath", value: HERO_PATH },
-        { upsert: true }
-    );
 
     await Config.findOneAndUpdate(
         { key: "copilot.welcomeMessage" },

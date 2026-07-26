@@ -1,19 +1,18 @@
 import React from "react";
 import { cx } from "../../utils/classNames";
 
-const FILTERS = [
-  "all",
-  "equipment",
-  "incident",
-  "document",
-  "person",
-  "recommendation",
-];
+/**
+ * Filter chips are derived from `types`, the distinct entity types
+ * actually present in the live knowledge graph (as extracted by the AI
+ * Engine - see ai_engine/knowledge_graph/knowledge_extractor.py), not a
+ * fixed guess at what the graph might contain. "All" is always available.
+ */
+export default function GraphFilterBar({ types = [], activeFilter, onChange }) {
+  const filters = ["all", ...types];
 
-export default function GraphFilterBar({ activeFilter, onChange }) {
   return (
-    <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
-      {FILTERS.map((filter) => (
+    <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl flex-wrap">
+      {filters.map((filter) => (
         <button
           key={filter}
           onClick={() => onChange(filter)}

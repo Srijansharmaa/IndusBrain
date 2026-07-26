@@ -4,7 +4,7 @@ import {
     getSuggestedQueries,
     getInitialMessage,
     askCopilot,
-} from "../controllers/copilotController.js";
+} from "../controllers/copilotcontroller.js";
 import { protect } from "../middleware/authMiddleware.js";
 import validate from "../middleware/validateMiddleware.js";
 

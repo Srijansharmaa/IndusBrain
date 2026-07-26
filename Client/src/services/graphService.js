@@ -15,6 +15,11 @@ export const getHeroPath = async () => {
   return res.data.heroPath;
 };
 
+export const getGraphStats = async () => {
+  const res = await api.get("/graph/stats");
+  return res.data.stats;
+};
+
 export const getNodeDetails = async (nodeId) => {
   const res = await api.get(`/graph/nodes/${nodeId}`);
   return { node: res.data.node, relatedIds: res.data.relatedIds };

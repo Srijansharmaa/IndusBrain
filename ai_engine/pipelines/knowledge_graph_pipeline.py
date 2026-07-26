@@ -1,3 +1,4 @@
+from os import error
 import time
 
 from ai_engine.knowledge_graph.knowledge_extractor import KnowledgeExtractor
@@ -5,6 +6,7 @@ from ai_engine.knowledge_graph.graph_builder import GraphBuilder
 from ai_engine.knowledge_graph.graph_store import GraphStore
 from ai_engine.knowledge_graph.graph_merger import GraphMerger
 from ai_engine.knowledge_graph.graph_statistics import GraphStatistics
+from ai_engine.services.maintenance_enrichment import MaintenanceEnrichment
 
 
 class KnowledgeGraphPipeline:
@@ -32,11 +34,11 @@ class KnowledgeGraphPipeline:
     Save Graph
     """
 
-    MAX_CHARS = 12000
+    MAX_CHARS = 4000
 
-    MIN_WORDS = 20
+    MIN_WORDS = 60
 
-    MAX_RETRIES = 3
+    MAX_RETRIES = 1
 
     RETRY_DELAY = 5
 
@@ -66,15 +68,25 @@ class KnowledgeGraphPipeline:
 
             except Exception as e:
 
-                print(f"Gemini Error ({attempt+1}/{self.MAX_RETRIES})")
+                error = str(e).lower()
 
+                if "429" in error or "rate limit" in error:
+                    print("[KG] Groq rate limit reached. Skipping remaining extraction.")
+
+                return {
+                    "entities": [],
+                    "relationships": []
+                }
+
+                print(f"Groq Error ({attempt+1}/{self.MAX_RETRIES})")
                 print(e)
 
                 if attempt == self.MAX_RETRIES - 1:
-
                     raise
 
                 time.sleep(self.RETRY_DELAY)
+
+                
 
     def process(self, chunks):
 
@@ -87,6 +99,8 @@ class KnowledgeGraphPipeline:
         current_batch = []
 
         current_chars = 0
+        MAX_BATCHES=8
+        processed_batches=0
 
         for chunk in chunks:
 
@@ -107,34 +121,34 @@ class KnowledgeGraphPipeline:
             ):
 
                 self._process_batch(
-
                     current_batch,
-
                     all_entities,
-
                     all_relationships
-
                 )
 
-                current_batch = []
+                processed_batches += 1
 
+                if processed_batches >= MAX_BATCHES:
+                  print(f"[KG] Reached maximum batches ({MAX_BATCHES}). Stopping extraction.")
+                  current_batch = []
+                  break
+
+                current_batch = []
                 current_chars = 0
 
             current_batch.append(chunk)
 
             current_chars += chunk_size
 
-        if current_batch:
+        if current_batch and processed_batches < MAX_BATCHES:
 
-            self._process_batch(
+          self._process_batch(
+           current_batch,
+            all_entities,
+           all_relationships
+        )
 
-                current_batch,
-
-                all_entities,
-
-                all_relationships
-
-            )
+        processed_batches += 1
 
        
 
@@ -149,6 +163,7 @@ class KnowledgeGraphPipeline:
             all_relationships
 
         )
+        new_graph = MaintenanceEnrichment.enrich(new_graph)
 
         # Debug: new graph counts
         ng_nodes = len(new_graph.get('nodes', []))
@@ -208,6 +223,8 @@ class KnowledgeGraphPipeline:
             for chunk in batch
 
         )
+
+        batch_text = batch_text[:3000]
 
         result = self._extract(
 

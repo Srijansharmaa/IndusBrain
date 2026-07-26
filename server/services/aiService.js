@@ -102,3 +102,48 @@ export const checkAiEngineHealth = async () => {
         return { reachable: false, status: "unreachable" };
     }
 };
+
+/**
+ * The following four functions read the real, generated Knowledge Graph
+ * from FastAPI's existing /knowledge-graph/* endpoints (backed by
+ * data/knowledge_graph.json, built by KnowledgeGraphPipeline on every
+ * document upload). These endpoints already existed in ai_engine/app.py;
+ * graphController.js previously read a separate, static, seed-only Mongo
+ * collection instead of calling them. No new AI Engine endpoints are
+ * introduced here - this only wires up ones that already existed.
+ */
+export const getKnowledgeGraphNodes = async () => {
+    try {
+        const response = await aiClient.get("/knowledge-graph/nodes");
+        return response.data;
+    } catch (error) {
+        handleAiEngineError(error, "knowledge graph nodes");
+    }
+};
+
+export const getKnowledgeGraphEdges = async () => {
+    try {
+        const response = await aiClient.get("/knowledge-graph/edges");
+        return response.data;
+    } catch (error) {
+        handleAiEngineError(error, "knowledge graph edges");
+    }
+};
+
+export const getKnowledgeGraphStats = async () => {
+    try {
+        const response = await aiClient.get("/knowledge-graph/stats");
+        return response.data;
+    } catch (error) {
+        handleAiEngineError(error, "knowledge graph stats");
+    }
+};
+
+export const getKnowledgeGraphNode = async (nodeId) => {
+    try {
+        const response = await aiClient.get(`/knowledge-graph/node/${encodeURIComponent(nodeId)}`);
+        return response.data;
+    } catch (error) {
+        handleAiEngineError(error, "knowledge graph node detail");
+    }
+};

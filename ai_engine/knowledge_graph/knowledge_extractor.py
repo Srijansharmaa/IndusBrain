@@ -1,12 +1,12 @@
 import json
 
-from ai_engine.llm.gemini_llm import GeminiLLM
+from ai_engine.llm.groq_llm import GroqLLM
 
 
 class KnowledgeExtractor:
     """
     Extracts entities and relationships
-    from industrial documents using Gemini.
+from industrial documents using Groq.
 
     This version uses a much stricter prompt
     to improve graph quality.
@@ -14,7 +14,7 @@ class KnowledgeExtractor:
 
     def __init__(self):
 
-        self.llm = GeminiLLM()
+        self.llm = GroqLLM()
 
     def extract(self, text: str):
 

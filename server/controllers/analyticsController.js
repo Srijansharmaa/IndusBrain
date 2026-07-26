@@ -4,44 +4,175 @@ import KnowledgeHealth from "../models/KnowledgeHealth.js";
 import Metric from "../models/Metric.js";
 import Document from "../models/Document.js";
 import SearchLog from "../models/SearchLog.js";
-import GraphNode from "../models/GraphNode.js";
-import GraphEdge from "../models/GraphEdge.js";
 import Conversation from "../models/Conversation.js";
 import ActivityLog from "../models/ActivityLog.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import * as analyticsEngine from "../services/ai/analyticsEngine.js";
 import * as maintenanceEngine from "../services/ai/maintenanceEngine.js";
 import * as complianceEngine from "../services/ai/complianceEngine.js";
+import {
+    getKnowledgeGraphNodes,
+    getKnowledgeGraphEdges,
+    getKnowledgeGraphStats,
+} from "../services/aiService.js";
 
 const SAFETY_LIMIT = 200;
 
 export const getKnowledgeGrowth = asyncHandler(async (req, res) => {
-    const data = await KnowledgeGrowth.find().sort({ order: 1 }).limit(SAFETY_LIMIT);
+
+    const [graphResponse, totalDocuments] = await Promise.all([
+        getKnowledgeGraphNodes(),
+        Document.countDocuments(),
+    ]);
+
+    const totalNodes = (graphResponse.nodes || []).length;
+
+    const knowledgeGrowth = [
+        {
+            m: "Current",
+            docs: totalDocuments,
+            ai: totalNodes,
+        },
+    ];
+
     res.json({
         success: true,
-        knowledgeGrowth: data.map((d) => ({ m: d.month, docs: d.docs, ai: d.ai })),
+        knowledgeGrowth,
     });
+
 });
 
 export const getDepartmentActivity = asyncHandler(async (req, res) => {
-    const data = await DepartmentActivity.find().limit(SAFETY_LIMIT);
+
+    const graph = await getKnowledgeGraphNodes();
+
+    const nodes = graph.nodes || [];
+
+    const counts = {};
+
+    nodes.forEach((node) => {
+
+        const dept = node.department || "Unknown";
+
+        counts[dept] = (counts[dept] || 0) + 1;
+
+    });
+
+    const departmentActivity = Object.entries(counts).map(([dept, value]) => ({
+        dept,
+        value,
+    }));
+
     res.json({
         success: true,
-        departmentActivity: data.map((d) => ({ dept: d.dept, value: d.value })),
+        departmentActivity,
     });
+
 });
 
 export const getKnowledgeHealthRadar = asyncHandler(async (req, res) => {
-    const data = await KnowledgeHealth.find().limit(SAFETY_LIMIT);
+
+    const statsResponse = await getKnowledgeGraphStats();
+
+    const stats = statsResponse.stats || {};
+
+    const totalNodes = stats.total_nodes || 0;
+    const totalEdges = stats.total_edges || 0;
+
+    const connectivity =
+        totalNodes === 0
+            ? 0
+            : Math.min(100, Math.round((totalEdges / totalNodes) * 20));
+
+    const radar = [
+        {
+            area: "Coverage",
+            value: Math.min(100, totalNodes),
+        },
+        {
+            area: "Connectivity",
+            value: connectivity,
+        },
+        {
+            area: "Relationships",
+            value: Math.min(100, totalEdges),
+        },
+        {
+            area: "Knowledge",
+            value: Math.min(100, Math.round((totalNodes + totalEdges) / 2)),
+        },
+        {
+            area: "Graph Health",
+            value: connectivity,
+        },
+    ];
+
     res.json({
         success: true,
-        radar: data.map((d) => ({ area: d.area, value: d.value })),
+        radar,
     });
+
 });
 
 export const getAnalyticsMetrics = asyncHandler(async (req, res) => {
-    const metrics = await Metric.find({ domain: "analytics" }).sort({ order: 1 });
-    res.json({ success: true, metrics });
+
+    const [nodesResponse, edgesResponse] = await Promise.all([
+        getKnowledgeGraphNodes(),
+        getKnowledgeGraphEdges(),
+    ]);
+
+    const nodes = nodesResponse.nodes || [];
+    const edges = edgesResponse.edges || [];
+
+    const departments = new Set();
+
+    let healthyAssets = 0;
+
+    nodes.forEach((node) => {
+
+        if (node.department) {
+            departments.add(node.department);
+        }
+
+        if (
+            node.type === "Equipment" &&
+            Number(node.health || node.health_score || 0) >= 90
+        ) {
+            healthyAssets++;
+        }
+
+    });
+
+    res.json({
+        success: true,
+        metrics: [
+            {
+                label: "Knowledge Nodes",
+                value: nodes.length,
+                icon: "Database",
+                color: "primary",
+            },
+            {
+                label: "Healthy Assets",
+                value: healthyAssets,
+                icon: "CheckCircle2",
+                color: "success",
+            },
+            {
+                label: "Relationships",
+                value: edges.length,
+                icon: "Link2",
+                color: "purple",
+            },
+            {
+                label: "Departments",
+                value: departments.size,
+                icon: "Users",
+                color: "warning",
+            },
+        ],
+    });
+
 });
 
 /**
@@ -106,20 +237,18 @@ export const getSearchAnalytics = asyncHandler(async (req, res) => {
 
 /**
  * @route GET /api/analytics/graph-metrics
+ * Same live source as GET /api/graph/stats, so analytics numbers never
+ * drift from what Graph Explorer / Graph Statistics show.
  */
 export const getGraphMetrics = asyncHandler(async (req, res) => {
-    const [byType, nodeCount, edgeCount] = await Promise.all([
-        GraphNode.aggregate([{ $group: { _id: "$type", count: { $sum: 1 } } }]),
-        GraphNode.countDocuments(),
-        GraphEdge.countDocuments(),
-    ]);
+    const { stats } = await getKnowledgeGraphStats();
 
     res.json({
         success: true,
         graphMetrics: {
-            totalNodes: nodeCount,
-            totalEdges: edgeCount,
-            byType: Object.fromEntries(byType.map((t) => [t._id, t.count])),
+            totalNodes: stats.total_nodes,
+            totalEdges: stats.total_edges,
+            byType: stats.entity_types || {},
         },
     });
 });

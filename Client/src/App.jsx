@@ -10,6 +10,7 @@ import CompliancePage from "./pages/CompliancePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import AdminPage from "./pages/AdminPage";
 import SettingsPage from "./pages/SettingsPage";
+import LoadingSpinner from "./components/common/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
 import { useKnowledgeGraph } from "./hooks/useKnowledgeGraph";
 import { useDarkMode } from "./hooks/useDarkMode";
@@ -27,12 +28,20 @@ const PAGE_COMPONENTS = {
 };
 
 export default function App() {
-  const { user, login } = useAuth();
+  const { user, login, initializing } = useAuth();
   const [page, setPage] = useState("dashboard");
   const [dark, setDark] = useDarkMode();
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingQuery, setPendingQuery] = useState(null);
   const graph = useKnowledgeGraph();
+
+  if (initializing) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <LoadingSpinner size={32} />
+      </div>
+    );
+  }
 
   if (!user) return <LoginScreen onLogin={login} />;
 

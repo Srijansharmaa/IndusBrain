@@ -1,19 +1,21 @@
 import React from "react";
 import Badge from "../common/Badge";
-import { NODE_TYPE_STYLES } from "../../constants/colors";
+import { getNodeTypeStyle, getNodeTypeBucket } from "../../constants/colors";
 
-const TONE_BY_TYPE = {
+const TONE_BY_BUCKET = {
   equipment: "primary",
-  incident: "danger",
+  material: "danger",
   document: "warning",
   person: "purple",
-  recommendation: "success",
+  process: "success",
+  unknown: "neutral",
 };
 
 export default function NodeDetailCard({ node, relationCount = 0 }) {
   if (!node) return null;
 
-  const style = NODE_TYPE_STYLES[node.type];
+  const style = getNodeTypeStyle(node.type);
+  const tone = TONE_BY_BUCKET[getNodeTypeBucket(node.type)];
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-4">
@@ -28,7 +30,7 @@ export default function NodeDetailCard({ node, relationCount = 0 }) {
           </p>
         </div>
 
-        <Badge tone={TONE_BY_TYPE[node.type]}>
+        <Badge tone={tone}>
           {style.label}
         </Badge>
       </div>

@@ -49,17 +49,14 @@ export const uploadDocument = asyncHandler(async (req, res) => {
         });
     }
 
-    document.status = "completed";
-    document.chunkCount = aiResult.total_chunks;
-    document.analysis = aiResult.analysis || {};
-    await document.save();
+    document.status = "processing";
+await document.save();
 
-    res.status(201).json({
-        success: true,
-        message: "Document uploaded and processed successfully.",
-        document,
-        aiResult,
-    });
+res.status(201).json({
+    success: true,
+    message: "Document uploaded successfully. AI processing has started.",
+    document,
+});
 });
 
 /**

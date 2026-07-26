@@ -2,13 +2,12 @@ import Metric from "../models/Metric.js";
 import ActivityLog from "../models/ActivityLog.js";
 import RecommendedAction from "../models/RecommendedAction.js";
 import Document from "../models/Document.js";
-import GraphNode from "../models/GraphNode.js";
-import GraphEdge from "../models/GraphEdge.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import formatRelativeTime from "../utils/formatRelativeTime.js";
 import * as dashboardEngine from "../services/ai/dashboardEngine.js";
 import * as complianceEngine from "../services/ai/complianceEngine.js";
 import * as notificationEngine from "../services/ai/notificationEngine.js";
+import { getKnowledgeGraphStats } from "../services/aiService.js";
 
 /**
  * @route GET /api/dashboard/summary
@@ -30,8 +29,7 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
         actions,
         documentsToday,
         recentDocuments,
-        graphNodeCount,
-        graphEdgeCount,
+        graphStats,
         complianceItems,
         expiringCompliance,
         maintenanceOverview,
@@ -46,8 +44,10 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
             createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
         }),
         Document.find().sort({ createdAt: -1 }).limit(5).select("originalName status fileType createdAt"),
-        GraphNode.countDocuments(),
-        GraphEdge.countDocuments(),
+        // Best-effort: the dashboard as a whole must not fail just because
+        // the AI Engine is temporarily unreachable, so this one widget
+        // degrades to zeros instead of taking down the whole summary.
+        getKnowledgeGraphStats().catch(() => ({ stats: { total_nodes: 0, total_edges: 0 } })),
         complianceEngine.getComplianceItems(),
         complianceEngine.getExpiringItems(),
         dashboardEngine.getEquipmentStatistics(),
@@ -109,8 +109,8 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
                 uploadedAt: d.createdAt,
             })),
             knowledgeGraphOverview: {
-                totalNodes: graphNodeCount,
-                totalEdges: graphEdgeCount,
+                totalNodes: graphStats.stats.total_nodes,
+                totalEdges: graphStats.stats.total_edges,
             },
             complianceOverview: {
                 total: complianceItems.length,

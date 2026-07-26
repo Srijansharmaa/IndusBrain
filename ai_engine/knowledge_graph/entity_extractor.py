@@ -1,4 +1,4 @@
-from ai_engine.llm.gemini_llm import GeminiLLM
+from ai_engine.llm.groq_llm import GroqLLM
 import json
 
 
@@ -8,7 +8,7 @@ class EntityExtractor:
     """
 
     def __init__(self):
-        self.llm = GeminiLLM()
+        self.llm = GroqLLM()
 
     def extract(self, text: str):
 

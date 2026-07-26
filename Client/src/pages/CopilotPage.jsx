@@ -21,7 +21,7 @@ export default function CopilotPage({ graph, pendingQuery, onConsumePendingQuery
   useEffect(() => {
     getInitialMessage().then((msg) => setMessages([msg]));
     getSuggestedQueries().then(setSuggestedQueries);
-    getHeroPath().then(setHeroPath);
+    getHeroPath().then(setHeroPath).catch(() => {});
   }, []);
 
   const onPathStep = useCallback((path, node) => {
@@ -95,7 +95,7 @@ export default function CopilotPage({ graph, pendingQuery, onConsumePendingQuery
         suggestedQueries={suggestedQueries}
         onSourceClick={onSearchDocuments}
       />
-      <KnowledgeGraphPanel activePath={[]} activeNode={null} setActiveNode={graph.setActiveNode} />
+      <KnowledgeGraphPanel activePath={graph.activePath} activeNode={graph.activeNode} setActiveNode={graph.setActiveNode} />
     </div>
   );
 }

@@ -4,12 +4,22 @@ import { ThermometerSun } from "lucide-react";
 import Card from "../common/Card";
 import Badge from "../common/Badge";
 
-const RISK_TONE = { High: "danger", Medium: "warning", Low: "success" };
-const RISK_HEX = { High: "#EF4444", Medium: "#F59E0B", Low: "#22C55E" };
+const RISK_TONE = {
+  High: "danger",
+  Medium: "warning",
+  Low: "success",
+};
+
+const RISK_HEX = {
+  High: "#EF4444",
+  Medium: "#F59E0B",
+  Low: "#22C55E",
+};
 
 export default function EquipmentHealthCard({ equipment, onSelect }) {
   const color = RISK_HEX[equipment.risk];
   const circumference = 2 * Math.PI * 24;
+
 
   return (
     <Card onClick={() => onSelect(equipment)}>

@@ -9,12 +9,15 @@ export default function GraphExplorerPage({ graph }) {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [nodes, setNodes] = useState([]);
+  const [nodesError, setNodesError] = useState(null);
   const [activeNode, setActiveNode] = useState(null);
   const [relatedNodes, setRelatedNodes] = useState([]);
   const [trail, setTrail] = useState([]);
 
   useEffect(() => {
-    getGraphNodes().then(setNodes);
+    getGraphNodes()
+      .then(setNodes)
+      .catch(() => setNodesError("Couldn't load the knowledge graph. The AI engine may be unreachable."));
   }, []);
 
   useEffect(() => {
@@ -25,21 +28,25 @@ export default function GraphExplorerPage({ graph }) {
     }
 
     let cancelled = false;
-    getNodeDetails(graph.activeNode).then(({ node, relatedIds }) => {
-      if (cancelled) return;
-      setActiveNode(node);
-      setRelatedNodes(
-        (relatedIds || [])
-          .map((id) => nodes.find((n) => n.id === id))
-          .filter(Boolean)
-      );
-      if (node) {
-        setTrail((prev) => {
-          const withoutDupe = prev.filter((n) => n.id !== node.id);
-          return [...withoutDupe, { id: node.id, label: node.label }].slice(-6);
-        });
-      }
-    });
+    getNodeDetails(graph.activeNode)
+      .then(({ node, relatedIds }) => {
+        if (cancelled) return;
+        setActiveNode(node);
+        setRelatedNodes(
+          (relatedIds || [])
+            .map((id) => nodes.find((n) => n.id === id))
+            .filter(Boolean)
+        );
+        if (node) {
+          setTrail((prev) => {
+            const withoutDupe = prev.filter((n) => n.id !== node.id);
+            return [...withoutDupe, { id: node.id, label: node.label }].slice(-6);
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setActiveNode(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -50,6 +57,8 @@ export default function GraphExplorerPage({ graph }) {
       ? []
       : nodes.filter((n) => n.type === filter).map((n) => n.id);
 
+  const availableTypes = [...new Set(nodes.map((n) => n.type))].sort();
+
   return (
     <div
       className="grid gap-5 grid-cols-1"
@@ -58,6 +67,12 @@ export default function GraphExplorerPage({ graph }) {
       }}
     >
       <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+
+        {nodesError && (
+          <div className="px-6 py-2 bg-red-50 border-b border-red-100 text-xs font-medium text-red-600">
+            {nodesError}
+          </div>
+        )}
 
         {/* Header */}
         <div className="px-6 py-4 bg-[#111827] border-b border-gray-700 flex flex-wrap items-center justify-between gap-3">
@@ -93,6 +108,7 @@ export default function GraphExplorerPage({ graph }) {
           </div>
 
           <GraphFilterBar
+            types={availableTypes}
             activeFilter={filter}
             onChange={setFilter}
           />

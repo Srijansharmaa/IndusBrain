@@ -4,19 +4,17 @@ import Card from "../common/Card";
 import SectionTitle from "../common/SectionTitle";
 import Badge from "../common/Badge";
 import KnowledgeGrowthChart from "../analytics/KnowledgeGrowthChart";
-import { getGraphNodes, getGraphEdges } from "../../services/graphService";
+import { getGraphStats } from "../../services/graphService";
 import { getDocuments } from "../../services/documentService";
 import { getKnowledgeGrowth } from "../../services/analyticsService";
 
 export default function KnowledgeMonitor() {
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+  const [stats, setStats] = useState({ totalNodes: 0, totalEdges: 0 });
   const [documents, setDocuments] = useState([]);
   const [growth, setGrowth] = useState([]);
 
   useEffect(() => {
-    getGraphNodes().then(setNodes);
-    getGraphEdges().then(setEdges);
+    getGraphStats().then(setStats).catch(() => {});
     getDocuments().then(setDocuments);
     getKnowledgeGrowth().then(setGrowth);
   }, []);
@@ -35,7 +33,7 @@ export default function KnowledgeMonitor() {
               <Share2 size={18} className="text-primary" />
             </div>
             <div>
-              <p className="m-0 text-xl font-extrabold text-ink">{nodes.length}</p>
+              <p className="m-0 text-xl font-extrabold text-ink">{stats.totalNodes}</p>
               <p className="m-0 text-xs text-subtext">Knowledge nodes</p>
             </div>
           </div>
@@ -46,7 +44,7 @@ export default function KnowledgeMonitor() {
               <GitBranch size={18} className="text-purple" />
             </div>
             <div>
-              <p className="m-0 text-xl font-extrabold text-ink">{edges.length}</p>
+              <p className="m-0 text-xl font-extrabold text-ink">{stats.totalEdges}</p>
               <p className="m-0 text-xs text-subtext">Relationships</p>
             </div>
           </div>

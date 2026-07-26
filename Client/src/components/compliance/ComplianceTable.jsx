@@ -4,6 +4,8 @@ import Badge from "../common/Badge";
 import { COMPLIANCE_STATUS_COLOR } from "../../constants/complianceData";
 
 export default function ComplianceTable({ items, onGenerateReport }) {
+  console.log("TABLE ITEMS:", items);
+
   return (
     <div className="bg-card rounded-card border border-hairline overflow-hidden">
       <div className="px-5 py-4 border-b border-hairline flex items-center justify-between">
@@ -30,8 +32,8 @@ export default function ComplianceTable({ items, onGenerateReport }) {
             <tr key={item.name} className="border-t border-hairline">
               <td className="px-5 py-3.5 text-[13px] text-ink font-semibold">{item.name}</td>
               <td className="px-5 py-3.5">
-                <Badge tone={COMPLIANCE_STATUS_COLOR[item.status]}>{item.status}</Badge>
-              </td>
+  {item.status}
+</td>
               <td className="px-5 py-3.5 text-xs text-subtext">{item.exp}</td>
               <td className="px-5 py-3.5 text-xs text-subtext">{item.risk}</td>
               <td className="px-5 py-3.5"><ChevronRight size={14} className="text-subtext" /></td>

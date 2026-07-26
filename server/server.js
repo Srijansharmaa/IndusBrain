@@ -20,9 +20,6 @@ import graphRoutes from "./Routes/graphRoutes.js";
 import maintenanceRoutes from "./Routes/maintenanceRoutes.js";
 import dashboardRoutes from "./Routes/dashboardRoutes.js";
 import aiRoutes from "./Routes/aiRoutes.js";
-import workflowRoutes from "./Routes/workflowRoutes.js";
-import notificationRoutes from "./Routes/notificationRoutes.js";
-import reportRoutes from "./Routes/reportRoutes.js";
 import errorHandler, { notFound } from "./middleware/errorMiddleware.js";
 import { checkAiEngineHealth } from "./services/aiService.js";
 import logger from "./utils/logger.js";
@@ -114,9 +111,6 @@ app.use("/api/graph", graphRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai", aiRoutes);
-app.use("/api/workflow", workflowRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/reports", reportRoutes);
 
 // ---------- Error handling (must be last) ----------
 app.use(notFound);

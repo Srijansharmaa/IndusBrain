@@ -158,7 +158,10 @@ export const updateAdminUser = asyncHandler(async (req, res) => {
         user: {
             id: user._id,
             name: user.name,
+            email: user.email,
+            roleId: user.role,
             role: roleLabel(user.role),
+            plantId: user.plant,
             plant: plantLabel(user.plant),
             status: user.status,
         },

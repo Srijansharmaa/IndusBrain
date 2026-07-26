@@ -5,17 +5,19 @@ import {
   FileText,
   User,
   Cog,
-  TriangleAlert,
-  Lightbulb,
+  FlaskConical,
+  GitBranch,
+  HelpCircle,
 } from "lucide-react";
-import { NODE_TYPE_STYLES } from "../../constants/colors";
+import { getNodeTypeStyle, getNodeTypeBucket } from "../../constants/colors";
 
-const ICONS = {
+const ICONS_BY_BUCKET = {
   equipment: Cog,
-  incident: TriangleAlert,
+  material: FlaskConical,
   document: FileText,
   person: User,
-  recommendation: Lightbulb,
+  process: GitBranch,
+  unknown: HelpCircle,
 };
 
 export default function GraphNodeDrawer({
@@ -26,7 +28,7 @@ export default function GraphNodeDrawer({
 }) {
   if (!node) return null;
 
-  const Icon = ICONS[node.type];
+  const Icon = ICONS_BY_BUCKET[getNodeTypeBucket(node.type)];
 
   return (
     <div className="w-full h-full rounded-2xl border border-gray-200 bg-white shadow-lg flex flex-col">
@@ -116,7 +118,7 @@ export default function GraphNodeDrawer({
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className={`w-3 h-3 rounded-full ${NODE_TYPE_STYLES[related.type].dot}`}
+                    className={`w-3 h-3 rounded-full ${getNodeTypeStyle(related.type).dot}`}
                   />
 
                   <div className="text-left">
