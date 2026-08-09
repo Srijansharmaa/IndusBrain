@@ -9,128 +9,86 @@ class GraphQuery:
     Query interface for the Knowledge Graph.
 
     Responsibilities:
-        • Find matching entities
-        • Retrieve connected relationships
-        • Build graph context for Hybrid RAG
+    - Find matching entities
+    - Retrieve connected relationships
+    - Build graph context for Hybrid RAG
     """
 
     MATCH_THRESHOLD = 70
 
     def __init__(self):
-
         self.store = GraphStore()
-
         self.graph = self.store.load()
-
-   
 
     def reload(self):
-
         self.graph = self.store.load()
 
-
     def search_entities(self, question):
-
         keywords = QueryProcessor.extract_keywords(question)
 
         matched = []
-
         visited = set()
 
         for keyword in keywords:
-
-            for node in self.graph["nodes"]:
-
-                name = node["label"]
+            for node in self.graph.get("nodes", []):
+                name = node.get("label", "")
 
                 score = fuzz.partial_ratio(
-
                     keyword.lower(),
-
                     name.lower()
-
                 )
 
                 if score >= self.MATCH_THRESHOLD:
+                    node_id = node.get("id")
 
-                    if name not in visited:
-
-                        visited.add(name)
-
+                    if node_id not in visited:
+                        visited.add(node_id)
                         matched.append(node)
 
         return matched
 
-  
-
-    def get_neighbors(self, entity_name):
-
+    def get_neighbors(self, entity_id):
         neighbors = []
 
-        for edge in self.graph["edges"]:
-
+        for edge in self.graph.get("edges", []):
             if (
-
-                edge["source"].lower()
-
-                ==
-
-                entity_name.lower()
-
+                edge.get("source", "").lower() == entity_id.lower()
+                or
+                edge.get("target", "").lower() == entity_id.lower()
             ):
-
-                neighbors.append(edge)
-
-            elif (
-
-                edge["target"].lower()
-
-                ==
-
-                entity_name.lower()
-
-            ):
-
                 neighbors.append(edge)
 
         return neighbors
 
-   
-
     def build_context(self, question):
+
+        # Always use the latest persisted graph
+        self.reload()
 
         entities = self.search_entities(question)
 
         if not entities:
-
             return ""
 
         lines = []
 
         for entity in entities:
 
+            entity_id = entity.get("id", "")
+            entity_label = entity.get("label", "")
+
             lines.append(
-
-                f"Entity: {entity['label']}"
-
+                f"Entity: {entity_label}"
             )
 
-            neighbors = self.get_neighbors(
-
-                entity["label"]
-
-            )
+            neighbors = self.get_neighbors(entity_id)
 
             for relation in neighbors:
 
                 lines.append(
-
-                    f"  {relation['source']} "
-
-                    f"--{relation['relationship']}--> "
-
-                    f"{relation['target']}"
-
+                    f"  {relation.get('source', '')} "
+                    f"--{relation.get('label', '')}--> "
+                    f"{relation.get('target', '')}"
                 )
 
             lines.append("")

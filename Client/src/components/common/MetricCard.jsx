@@ -1,6 +1,5 @@
 import React from "react";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import Card from "./Card";
+import { ArrowUpRight, ArrowDownRight, ShieldCheck } from "lucide-react";import Card from "./Card";
 import { cx } from "../../utils/classNames";
 
 const TONE_TEXT = {
@@ -19,9 +18,17 @@ const TONE_BG = {
   danger: "bg-red-50",
 };
 
-export default function MetricCard({ icon: Icon, label, value, delta, up, color = "primary" }) {
-  return (
-    <Card className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+export default function MetricCard({
+  icon: Icon = ShieldCheck,
+  label,
+  value,
+  delta,
+  up,
+  color = "primary",
+}) {  
+  const SafeIcon = Icon || ShieldCheck;
+  return(
+  <Card className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       <div
   className={cx(
     "absolute top-0 left-0 h-1 w-full",
@@ -45,7 +52,7 @@ export default function MetricCard({ icon: Icon, label, value, delta, up, color 
     TONE_BG[color]
   )}
 >
-         <Icon
+         <SafeIcon
   size={22}
   className={cx(
     TONE_TEXT[color],

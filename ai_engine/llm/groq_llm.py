@@ -44,7 +44,6 @@ class GroqLLM:
                 ],
                  temperature=0,
                 max_completion_tokens=600,
-                response_format={"type": "json_object"}
             )
 
         except RateLimitError as e:

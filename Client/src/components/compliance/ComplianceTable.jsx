@@ -32,8 +32,8 @@ export default function ComplianceTable({ items, onGenerateReport }) {
             <tr key={item.name} className="border-t border-hairline">
               <td className="px-5 py-3.5 text-[13px] text-ink font-semibold">{item.name}</td>
               <td className="px-5 py-3.5">
-  {item.status}
-</td>
+                <Badge tone={COMPLIANCE_STATUS_COLOR[item.status]}>{item.status}</Badge>
+              </td>
               <td className="px-5 py-3.5 text-xs text-subtext">{item.exp}</td>
               <td className="px-5 py-3.5 text-xs text-subtext">{item.risk}</td>
               <td className="px-5 py-3.5"><ChevronRight size={14} className="text-subtext" /></td>
